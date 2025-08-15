@@ -12,12 +12,18 @@ export async function middleware(req: NextRequest) {
   const isLoggedIn = !!sessionCookie;
   const isOnProtectedRoute = protectedRoutes.includes(nextUrl.pathname);
   const isOnAuthRoute = nextUrl.pathname.startsWith("/auth");
+  const isOnLoginPage = nextUrl.pathname === "/"; // login page kamu
 
   if (isOnProtectedRoute && !isLoggedIn) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   if (isOnAuthRoute && isLoggedIn) {
+    return NextResponse.redirect(new URL("/profile", req.url));
+  }
+
+  // tambahan ini supaya / tidak bisa diakses kalau sudah login
+  if (isOnLoginPage && isLoggedIn) {
     return NextResponse.redirect(new URL("/profile", req.url));
   }
 

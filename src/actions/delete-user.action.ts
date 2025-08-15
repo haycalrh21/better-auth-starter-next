@@ -24,7 +24,7 @@ export async function deleteUserAction({ userId }: { userId: string }) {
     await prisma.user.delete({
       where: {
         id: userId,
-        role: "USER",
+        role: "ADMIN",
       },
     });
 

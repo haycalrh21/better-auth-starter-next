@@ -28,9 +28,10 @@ export const UserRoleSelect = ({ userId, role }: UserRoleSelectProps) => {
       return toast.error("Forbidden");
     }
 
+    // Type casting untuk mengatasi mismatch
     await admin.setRole({
       userId,
-      role: newRole,
+      role: newRole as "ADMIN" | "USER", // Cast ke type yang diexpect
       fetchOptions: {
         onRequest: () => {
           setIsPending(true);
@@ -58,6 +59,7 @@ export const UserRoleSelect = ({ userId, role }: UserRoleSelectProps) => {
     >
       <option value="ADMIN">ADMIN</option>
       <option value="USER">USER</option>
+      <option value="GURU">GURU</option> {/* Tambahkan option GURU */}
     </select>
   );
 };

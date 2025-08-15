@@ -1,4 +1,4 @@
-import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware, APIError } from "better-auth/api";
@@ -10,7 +10,7 @@ import { normalizeName, VALID_DOMAINS } from "@/lib/utils";
 import { ac, roles } from "@/lib/permissions";
 import { sendEmailAction } from "@/actions/send-email.action";
 
-const options = {
+export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -99,6 +99,11 @@ const options = {
             return { data: { ...user, role: "ADMIN" } };
           }
 
+          // If no role is provided, set default to "SISWA"
+          if (!user.role) {
+            return { data: { ...user, role: "SISWA" } };
+          }
+
           return { data: user };
         },
       },
@@ -107,8 +112,25 @@ const options = {
   user: {
     additionalFields: {
       role: {
-        type: ["USER", "ADMIN"],
+        type: "string",
+        input: true,
+        required: true,
+        defaultValue: "SISWA",
+      },
+      banned: {
+        type: "boolean",
         input: false,
+        defaultValue: false,
+      },
+      banReason: {
+        type: "string",
+        input: false,
+        required: false,
+      },
+      banExpires: {
+        type: "date",
+        input: false,
+        required: false,
       },
     },
   },
@@ -142,7 +164,6 @@ const options = {
   plugins: [
     nextCookies(),
     admin({
-      defaultRole: "USER",
       adminRoles: ["ADMIN"],
       ac,
       roles,
@@ -159,17 +180,11 @@ const options = {
         });
       },
     }),
-  ],
-} satisfies BetterAuthOptions;
-
-export const auth = betterAuth({
-  ...options,
-  plugins: [
-    ...(options.plugins ?? []),
     customSession(async ({ user, session }) => {
       // Pastikan user role diambil dari database yang terbaru
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
+        select: { role: true },
       });
 
       return {
@@ -184,11 +199,11 @@ export const auth = betterAuth({
           email: user.email,
           image: user.image,
           createdAt: user.createdAt,
-          role: dbUser?.role || user.role, // Pastikan role diambil
+          role: (dbUser?.role as "ADMIN" | "GURU" | "SISWA") || "SISWA",
           giraffeFact: "giraffes can sometimes nap with one eye open",
         },
       };
-    }, options),
+    }),
   ],
 });
 
