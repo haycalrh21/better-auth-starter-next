@@ -17,25 +17,14 @@ export async function signUpEmailAction(formData: FormData) {
     | "ADMIN"
     | "GURU"
     | "SISWA";
-  if (!appRole || !["ADMIN", "GURU", "SISWA"].includes(appRole)) {
-    return { error: "Please select a valid role" };
-  }
 
   try {
-    // Mapping ke role bawaan Better Auth
-    let betterAuthRole: "ADMIN" | "USER";
-    if (appRole === "ADMIN") {
-      betterAuthRole = "ADMIN";
-    } else {
-      betterAuthRole = "USER";
-    }
-
     await auth.api.createUser({
       body: {
         email,
         password,
         name,
-        role: betterAuthRole, // sesuai tipe Better Auth
+        role: "ADMIN", // sesuai tipe Better Auth
         data: {
           role: appRole, // simpan role asli aplikasi
         },

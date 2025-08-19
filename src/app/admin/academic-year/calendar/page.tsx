@@ -1,11 +1,12 @@
+import React from "react";
 import AdminLayout from "../../layout/layout";
-// import CreateAccount from "../../teachers-staff/_component/createAccount";
+import AcademicCalendar from "../../_components/calender";
 
-export default function Page() {
+export default function CalendarPage() {
   return (
     <AdminLayout>
       <div className="grid auto-rows-min gap-4 md:grid-cols-1">
-        {/* <CreateAccount /> */}
+        <AcademicCalendar />
       </div>
     </AdminLayout>
   );

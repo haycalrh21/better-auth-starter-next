@@ -6,6 +6,8 @@ import { headers } from "next/headers";
 import { APIError } from "better-auth/api";
 import { redirect } from "next/navigation";
 
+type UserRole = "ADMIN" | "GURU" | "SISWA";
+
 export async function signInEmailAction(formData: FormData) {
   const email = String(formData.get("email"));
   if (!email) return { error: "Please enter your email" };
@@ -14,57 +16,38 @@ export async function signInEmailAction(formData: FormData) {
   if (!password) return { error: "Please enter your password" };
 
   try {
-    console.log("🔐 Attempting sign in for:", email);
-
-    const response = await auth.api.signInEmail({
+    await auth.api.signInEmail({
       headers: await headers(),
-      body: {
-        email,
-        password,
-      },
+      body: { email, password },
     });
 
-    console.log("✅ Sign in response:", response);
-
-    // Langsung cek ke database untuk mendapatkan role user
     const dbUser = await prisma.user.findUnique({
-      where: { email: email },
-      select: { id: true, role: true, email: true, name: true },
+      where: { email },
+      select: { role: true },
     });
 
-    console.log("🗄️ User from database:", dbUser);
+    if (!dbUser) return { error: "User not found" };
 
-    const userRole = dbUser?.role;
-    const isAdmin = userRole === "ADMIN";
+    // Pastikan role sesuai enum
+    const role: UserRole =
+      dbUser.role === "ADMIN"
+        ? "ADMIN"
+        : dbUser.role === "GURU"
+        ? "GURU"
+        : "SISWA";
 
-    console.log("🔍 Is Admin check:", {
-      userRole,
-      isAdmin,
-      email,
-    });
+    // Tambahkan /dashboard di URL
+    const redirectTo = `/${role.toLowerCase()}/dashboard`; // /admin/dashboard, /guru/dashboard, /siswa/dashboard
 
-    const redirectTo = isAdmin ? "/admin/dashboard" : "/profile";
-    console.log("🚀 Redirecting to:", redirectTo);
-
-    return {
-      error: null,
-      isAdmin,
-      redirectTo,
-    };
+    return { error: null, redirectTo, role };
   } catch (err) {
-    console.error("❌ Sign in error:", err);
-
     if (err instanceof APIError) {
       const errCode = err.body ? (err.body.code as ErrorCode) : "UNKNOWN";
-      console.dir(err, { depth: 5 });
-      switch (errCode) {
-        case "EMAIL_NOT_VERIFIED":
-          redirect("/auth/verify?error=email_not_verified");
-        default:
-          return { error: err.message };
+      if (errCode === "EMAIL_NOT_VERIFIED") {
+        redirect("/auth/verify?error=email_not_verified");
       }
+      return { error: err.message };
     }
-
     return { error: "Internal Server Error" };
   }
 }

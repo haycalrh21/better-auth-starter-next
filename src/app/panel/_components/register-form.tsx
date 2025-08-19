@@ -6,12 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { signUpEmailAction } from "@/actions/sign-up-email.action";
 
 export const RegisterForm = () => {
   const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault();
@@ -27,7 +26,6 @@ export const RegisterForm = () => {
       setIsPending(false);
     } else {
       toast.success("Registration complete. You're all set.");
-      router.push("/auth/register/success");
     }
   }
 

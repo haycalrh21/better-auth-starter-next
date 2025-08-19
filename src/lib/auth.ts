@@ -5,7 +5,7 @@ import { createAuthMiddleware, APIError } from "better-auth/api";
 import { admin, customSession, magicLink } from "better-auth/plugins";
 
 import { prisma } from "@/lib/prisma";
-import { hashPassword, verifyPassword } from "@/lib/argon2";
+
 import { normalizeName, VALID_DOMAINS } from "@/lib/utils";
 import { ac, roles } from "@/lib/permissions";
 import { sendEmailAction } from "@/actions/send-email.action";
@@ -37,10 +37,7 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 6,
     autoSignIn: false,
-    password: {
-      hash: hashPassword,
-      verify: verifyPassword,
-    },
+
     requireEmailVerification: false,
     sendResetPassword: async ({ user, url }) => {
       await sendEmailAction({
@@ -93,17 +90,20 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(";") ?? [];
+          // ctx.db biasanya tersedia di hook (Better-auth passing Prisma client)
+          const userCount = await prisma.user.count();
 
-          if (ADMIN_EMAILS.includes(user.email)) {
+          if (userCount === 0) {
+            // User pertama -> ADMIN
             return { data: { ...user, role: "ADMIN" } };
           }
 
-          // If no role is provided, set default to "SISWA"
+          // Kalau bukan user pertama dan role tidak di-set, default GURU
           if (!user.role) {
-            return { data: { ...user, role: "SISWA" } };
+            return { data: { ...user, role: "GURU" } };
           }
 
+          // Kalau role sudah ada, pakai yang diberikan
           return { data: user };
         },
       },
@@ -115,7 +115,6 @@ export const auth = betterAuth({
         type: "string",
         input: true,
         required: true,
-        defaultValue: "SISWA",
       },
       banned: {
         type: "boolean",
@@ -136,9 +135,10 @@ export const auth = betterAuth({
   },
   session: {
     expiresIn: 30 * 24 * 60 * 60,
+
     cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60,
+      enabled: true, // Enable caching session in cookie (default: `false`)
+      maxAge: 300, // 5 minutes
     },
   },
   account: {

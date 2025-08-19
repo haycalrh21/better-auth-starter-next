@@ -22,11 +22,11 @@ export default async function Page() {
     headers: await headers(),
   });
 
-  if (session?.user.role !== "ADMIN") {
-    redirect("/profile");
+  if (session?.user.role !== "GURU") {
+    redirect("/notfound");
   }
 
-  console.log("Admin Layout Session:", session?.user);
+  // console.log("Admin Layout Session:", session?.user);
   return (
     <SidebarProvider>
       <AppSidebar user={session.user} />

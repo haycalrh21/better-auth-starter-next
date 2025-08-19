@@ -9,7 +9,7 @@ import { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AdminBreadcrumb } from "../dashboard/accounts/_components/breadCrumb";
+import { AdminBreadcrumb } from "../_components/breadCrumb";
 
 export default async function AdminLayout({
   children,
@@ -24,7 +24,7 @@ export default async function AdminLayout({
     redirect("/profile");
   }
 
-  console.log("Admin Layout Session:", session?.user);
+  // console.log("Admin Layout Session:", session?.user);
   return (
     <SidebarProvider>
       <AppSidebarAdmin user={session.user} />

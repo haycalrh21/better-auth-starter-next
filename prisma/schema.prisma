@@ -8,69 +8,132 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  GURU
-  SISWA
-}
-
 model Post {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  title   String
-  content String
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("posts")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  createdAt DateTime
-  updatedAt DateTime
-
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   name          String
   email         String    @unique
-  emailVerified Boolean
+  emailVerified Boolean   @default(false)
   image         String?
   role          UserRole  @default(GURU)
   banned        Boolean?
   banReason     String?
   banExpires    DateTime?
-
-  sessions Session[]
-  accounts Account[]
-  posts    Post[]
+  accounts      Account[]
+  guru          Guru?
+  posts         Post[]
+  sessions      Session[]
+   logs      UserLog[] 
+  siswa         Siswa?
 
   @@map("users")
 }
 
-model Session {
-  id        String   @id @default(uuid())
-  createdAt DateTime
-  updatedAt DateTime
+model Guru {
+  id                 String       @id @default(uuid())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  namaLengkap        String
+  nip                String?      @unique
+  nik                String?      @unique
+  tempatLahir        String?
+  tanggalLahir       DateTime?
+  jenisKelamin       Gender?
+  agama              Agama?
+  statusKawin        StatusKawin?
+  noHp               String?
+  emailAlternatif    String?
+  alamatLengkap      String?
+  kelurahan          String?
+  kecamatan          String?
+  kabupatenKota      String?
+  provinsi           String?
+  kodePos            String?
+  pendidikanTerakhir String?
+  jurusan            String?
+  tahunLulus         Int?
+  institusi          String?
+  statusKepegawaian  String?
+  golongan           String?
+  pangkat            String?
+  tmt                DateTime?
+  masaKerja          Int?
+  bidangStudi        String?
+  kelas              String?
+  isProfileComplete  Boolean      @default(false)
+  userId             String       @unique
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@map("guru")
+}
+
+model Siswa {
+  id                String    @id @default(uuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  namaLengkap       String
+  nisn              String?   @unique
+  nik               String?   @unique
+  tempatLahir       String?
+  tanggalLahir      DateTime?
+  jenisKelamin      Gender?
+  agama             Agama?
+  noHp              String?
+  emailAlternatif   String?
+  alamatLengkap     String?
+  kelurahan         String?
+  kecamatan         String?
+  kabupatenKota     String?
+  provinsi          String?
+  kodePos           String?
+  kelas             String?
+  tahunMasuk        Int?
+  namaAyah          String?
+  namaIbu           String?
+  namaWali          String?
+  pekerjaanAyah     String?
+  pekerjaanIbu      String?
+  pekerjaanWali     String?
+  noHpOrtu          String?
+  isProfileComplete Boolean   @default(false)
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("siswa")
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   expiresAt      DateTime
   token          String   @unique
   ipAddress      String?
   userAgent      String?
   impersonatedBy String?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
 model Account {
-  id        String   @id @default(uuid())
-  createdAt DateTime
-  updatedAt DateTime
-
+  id                    String    @id @default(uuid())
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
   accountId             String
   providerId            String
   accessToken           String?
@@ -80,21 +143,61 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("accounts")
 }
 
 model Verification {
-  id        String    @id @default(uuid())
-  createdAt DateTime?
-  updatedAt DateTime?
-
+  id         String    @id @default(uuid())
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
   identifier String
   value      String
   expiresAt  DateTime
 
   @@map("verifications")
+}
+
+enum UserRole {
+  ADMIN
+  GURU
+  SISWA
+}
+
+enum Gender {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum Agama {
+  ISLAM
+  KRISTEN
+  KATOLIK
+  HINDU
+  BUDDHA
+  KONGHUCU
+}
+
+enum StatusKawin {
+  BELUM_KAWIN
+  KAWIN
+  CERAI_HIDUP
+  CERAI_MATI
+}
+
+
+model UserLog {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  userId    String?   // nullable karena bisa ada aktivitas tanpa user (guest)
+  action    String    // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, VIEW
+  resource  String?   // nama resource yang diakses (posts, users, guru, siswa)
+  details   String?   // detail tambahan dalam format JSON string
+  ipAddress String?   
+  userAgent String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("user_logs")
 }
