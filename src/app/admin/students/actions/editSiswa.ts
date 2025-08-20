@@ -28,7 +28,7 @@ export async function editSiswa(id: string, formData: FormData) {
         kabupatenKota: data.kabupatenKota,
         provinsi: data.provinsi,
         kodePos: data.kodePos,
-        kelas: data.kelas,
+
         tahunMasuk: data.tahunMasuk,
         namaAyah: data.namaAyah,
         namaIbu: data.namaIbu,

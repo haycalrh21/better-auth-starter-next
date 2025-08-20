@@ -35,12 +35,12 @@ import { id } from "date-fns/locale";
 import { editSiswa } from "../actions/editSiswa";
 import { SiswaFormValues, siswaSchema } from "../schema/editSiswaSchema";
 import { objectToFormData } from "@/utils/objectToFormData";
-import { Agama, Gender, Siswa } from "@/interface/siswa";
+import { Agama, Gender, SiswaBasic } from "@/interface";
 
 interface EditSiswaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: Siswa | null;
+  item: SiswaBasic | null;
 }
 
 export function EditSiswaDialog({
@@ -79,7 +79,7 @@ export function EditSiswaDialog({
         kabupatenKota: item.kabupatenKota ?? "",
         provinsi: item.provinsi ?? "",
         kodePos: item.kodePos ?? "",
-        kelas: item.kelas ?? "",
+
         namaAyah: item.namaAyah ?? "",
         namaIbu: item.namaIbu ?? "",
         namaWali: item.namaWali ?? "",

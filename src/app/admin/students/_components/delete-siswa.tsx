@@ -13,12 +13,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { deleteSiswa } from "../actions/delete-siswa";
-import { Siswa } from "@/interface/siswa";
+import { SiswaBasic } from "@/interface";
 
 interface DeleteGuruDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: Siswa | null;
+  item: SiswaBasic | null;
 }
 
 export default function DeleteSiswaDialog({

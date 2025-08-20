@@ -33,7 +33,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { GuruFormValues, guruSchema } from "../../schemas/editGuruSchema";
 import { editGuru } from "../../teachers-staff/actions/editGuru";
-import { Agama, Gender, Guru, StatusKawin } from "@/interface/guru";
+import { Agama, Gender, Guru, StatusKawin } from "@/interface";
 
 // Asumsikan tipe ini ada di proyek Anda
 

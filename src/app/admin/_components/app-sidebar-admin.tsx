@@ -254,8 +254,8 @@ export default function AppSidebarAdmin({
         items: [
           {
             title: "Pembagian Kelas",
-            url: "/admin/classes-majors/class-division",
-            isActive: isActive("/admin/classes-majors/class-division"),
+            url: "/admin/kelas/pembagian-kelas",
+            isActive: isActive("/admin/kelas/pembagian-kelas"),
           },
           {
             title: "Jurusan",

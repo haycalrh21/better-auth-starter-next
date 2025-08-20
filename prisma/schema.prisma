@@ -43,12 +43,12 @@ model User {
 }
 
 model Guru {
-  id                 String       @id @default(uuid())
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  id                 String      @id @default(uuid())
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
   namaLengkap        String
-  nip                String?      @unique
-  nik                String?      @unique
+  nip                String?     @unique
+  nik                String?     @unique
   tempatLahir        String?
   tanggalLahir       DateTime?
   jenisKelamin       Gender?
@@ -72,12 +72,157 @@ model Guru {
   tmt                DateTime?
   masaKerja          Int?
   bidangStudi        String?
-  kelas              String?
-  isProfileComplete  Boolean      @default(false)
-  userId             String       @unique
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walikelas          String?
+  isProfileComplete  Boolean     @default(false)
+  userId             String      @unique
 
+  kelas              Kelas[]     // satu guru bisa punya banyak kelas
+  mataPelajaran     MataPelajaran[] // satu guru bisa mengajar banyak mata pelajaran
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+Jadwal          Jadwal[]     // satu guru bisa punya banyak jadwal
   @@map("guru")
+}
+
+model Kalender {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tanggal   DateTime
+  keterangan String?
+
+  @@map("kalender")
+}
+
+model MataPelajaran {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  nama        String
+  kode        String?  @unique
+  deskripsi   String?
+  guru        Guru?    @relation(fields: [guruId], references: [id])
+  guruId      String?
+  KKM         KKM[]     // satu mata pelajaran bisa punya banyak KKM
+  Jadwal     Jadwal[]  // satu mata pelajaran bisa punya banyak jadwal
+  @@map("mata_pelajaran")
+}
+
+model KKM {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  MataPelajaran MataPelajaran @relation(fields: [mataPelajaranId], references: [id])
+  mataPelajaranId String
+  nilai       Int
+
+  @@map("kkm")
+}
+model Jadwal {
+  id            String       @id @default(uuid())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  hari          Hari         // enum hari: SENIN, SELASA, dll
+  jamMulai      String       // contoh: "08:00"
+  jamSelesai    String       // contoh: "09:30"
+
+  kelasId       String
+  kelas         Kelas        @relation(fields: [kelasId], references: [id])
+
+  guruId        String
+  guru          Guru         @relation(fields: [guruId], references: [id])
+
+  mataPelajaranId String?
+  mataPelajaran   MataPelajaran? @relation(fields: [mataPelajaranId], references: [id])
+
+  @@map("jadwal")
+}
+
+model Beasiswa {
+  id           String    @id @default(uuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  nama         String
+  deskripsi    String?
+  nominal      Float
+  mulaiBerlaku DateTime?
+  selesaiBerlaku DateTime?
+  status       StatusBeasiswa @default(AKTIF)
+
+  siswaId      String
+  siswa        Siswa      @relation(fields: [siswaId], references: [id])
+
+  @@map("beasiswa")
+}
+
+enum StatusBeasiswa {
+  AKTIF
+  NONAKTIF
+  SELESAI
+}
+model Pembayaran {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  tipe         TipePembayaran
+  jumlah       Float
+  tanggal      DateTime
+  status       StatusPembayaran @default(BELUM_BAYAR)
+  metode       MetodePembayaran?
+
+  siswaId      String
+  siswa        Siswa      @relation(fields: [siswaId], references: [id])
+
+  kelasId      String?
+  kelas        Kelas?     @relation(fields: [kelasId], references: [id])
+
+  @@map("pembayaran")
+}
+
+enum TipePembayaran {
+  SPP
+  BUKU
+  EKSKUL
+  LAINNYA
+}
+
+enum StatusPembayaran {
+  BELUM_BAYAR
+  SUDAH_BAYAR
+  TERTUNDA
+}
+
+enum MetodePembayaran {
+  CASH
+  TRANSFER
+  VIRTUAL_ACCOUNT
+  E_WALLET
+}
+
+enum Hari {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}
+
+model Kelas {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  namaKelas   String
+  tahunAjaran String
+  jurusan     String?
+  semester    String
+
+  guru        Guru     @relation(fields: [guruId], references: [id])
+  guruId      String
+
+  siswa       Siswa[]  @relation("KelasSiswa") // banyak siswa di kelas ini
+  Jadwal     Jadwal[]  // satu kelas bisa punya banyak jadwal
+  Pembayaran Pembayaran[] // satu kelas bisa punya banyak pembayaran
+  @@map("kelas")
 }
 
 model Siswa {
@@ -95,11 +240,11 @@ model Siswa {
   emailAlternatif   String?
   alamatLengkap     String?
   kelurahan         String?
+  statsuSiswa      String?
   kecamatan         String?
   kabupatenKota     String?
   provinsi          String?
   kodePos           String?
-  kelas             String?
   tahunMasuk        Int?
   namaAyah          String?
   namaIbu           String?
@@ -111,9 +256,12 @@ model Siswa {
   isProfileComplete Boolean   @default(false)
   userId            String    @unique
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  Beasiswa     Beasiswa[] // satu siswa bisa punya banyak beasiswa
+  kelas             Kelas[]   @relation("KelasSiswa") // relasi many-to-many
+  Pembayaran     Pembayaran[] // satu siswa bisa punya banyak pembayaran
   @@map("siswa")
 }
+
 
 model Session {
   id             String   @id @default(uuid())

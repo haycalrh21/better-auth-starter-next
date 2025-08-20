@@ -120,38 +120,44 @@ export function DataTable<TData extends Record<string, unknown>>({
     setEditModalDeleteOpen(true);
   }, []);
 
-  const renderCellValue = React.useCallback((value: unknown, type?: string) => {
-    if (value === null || value === undefined) {
-      return <div>-</div>;
-    }
-    // ... (kode renderCellValue tetap sama)
-    switch (type) {
-      case "date":
-        if (value instanceof Date) {
-          return <div>{value.toLocaleDateString("id-ID")}</div>;
-        }
-        return <div>{String(value)}</div>;
+  const renderCellValue = React.useCallback(
+    (value: unknown, type?: string, key?: string) => {
+      if (value === null || value === undefined) return <div>-</div>;
 
-      case "boolean":
-        return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
+      if (key === "guru" && value) {
+        return <div>{(value as { namaLengkap: string }).namaLengkap}</div>;
+      }
 
-      case "number":
-        return <div>{Number(value).toLocaleString()}</div>;
+      switch (type) {
+        case "date":
+          return value instanceof Date ? (
+            <div>{value.toLocaleDateString("id-ID")}</div>
+          ) : (
+            <div>{String(value)}</div>
+          );
 
-      case "email":
-        return <div className="lowercase text-blue-600">{String(value)}</div>;
+        case "boolean":
+          return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
 
-      case "truncate":
-        return (
-          <div className="max-w-xs truncate" title={String(value)}>
-            {String(value)}
-          </div>
-        );
+        case "number":
+          return <div>{Number(value).toLocaleString()}</div>;
 
-      default:
-        return <div>{String(value)}</div>;
-    }
-  }, []);
+        case "email":
+          return <div className="lowercase text-blue-600">{String(value)}</div>;
+
+        case "truncate":
+          return (
+            <div className="max-w-xs truncate" title={String(value)}>
+              {String(value)}
+            </div>
+          );
+
+        default:
+          return <div>{String(value)}</div>;
+      }
+    },
+    []
+  );
 
   const tableColumns: ColumnDef<TData>[] = React.useMemo(() => {
     const generatedColumns: ColumnDef<TData>[] = [];
@@ -203,7 +209,7 @@ export function DataTable<TData extends Record<string, unknown>>({
             : col.label,
         cell: ({ row }) => {
           const value = row.getValue(String(col.key));
-          return renderCellValue(value, col.type);
+          return renderCellValue(value, col.type, String(col.key)); // <--- penting: kirim key
         },
       });
     });

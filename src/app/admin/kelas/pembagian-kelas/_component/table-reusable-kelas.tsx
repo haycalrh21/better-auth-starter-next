@@ -51,11 +51,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { GuruDetailsDialog } from "../../teachers-staff/_component/viewData";
-import { EditSiswaDialog } from "./edit-data-siswa";
-
-import DeleteSiswaDialog from "./delete-siswa";
-import { SiswaBasic } from "@/interface";
+import { Guru } from "@/interface/guru";
+import DeleteGuruDialog from "@/app/admin/teachers-staff/_component/delete-guru";
+import { EditGuruDialog } from "@/app/admin/teachers-staff/_component/edit-data";
+import { KelasDetailsDialog } from "./viewDataKelas";
+import { KelasWithRelations } from "@/interface";
 
 // Type untuk definisi kolom yang sederhana
 export interface TableColumn<TData> {
@@ -76,7 +76,7 @@ interface DataTableProps<TData extends Record<string, unknown>> {
   showActions?: boolean;
 }
 
-export function DataTableSiswa<TData extends Record<string, unknown>>({
+export function DataTableKelas<TData extends Record<string, unknown>>({
   data,
   columns,
   searchKey,
@@ -120,38 +120,44 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
     setEditModalDeleteOpen(true);
   }, []);
 
-  const renderCellValue = React.useCallback((value: unknown, type?: string) => {
-    if (value === null || value === undefined) {
-      return <div>-</div>;
-    }
-    // ... (kode renderCellValue tetap sama)
-    switch (type) {
-      case "date":
-        if (value instanceof Date) {
-          return <div>{value.toLocaleDateString("id-ID")}</div>;
-        }
-        return <div>{String(value)}</div>;
+  const renderCellValue = React.useCallback(
+    (value: unknown, type?: string, key?: string) => {
+      if (value === null || value === undefined) return <div>-</div>;
 
-      case "boolean":
-        return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
+      if (key === "guru" && value) {
+        return <div>{(value as { namaLengkap: string }).namaLengkap}</div>;
+      }
 
-      case "number":
-        return <div>{Number(value).toLocaleString()}</div>;
+      switch (type) {
+        case "date":
+          return value instanceof Date ? (
+            <div>{value.toLocaleDateString("id-ID")}</div>
+          ) : (
+            <div>{String(value)}</div>
+          );
 
-      case "email":
-        return <div className="lowercase text-blue-600">{String(value)}</div>;
+        case "boolean":
+          return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
 
-      case "truncate":
-        return (
-          <div className="max-w-xs truncate" title={String(value)}>
-            {String(value)}
-          </div>
-        );
+        case "number":
+          return <div>{Number(value).toLocaleString()}</div>;
 
-      default:
-        return <div>{String(value)}</div>;
-    }
-  }, []);
+        case "email":
+          return <div className="lowercase text-blue-600">{String(value)}</div>;
+
+        case "truncate":
+          return (
+            <div className="max-w-xs truncate" title={String(value)}>
+              {String(value)}
+            </div>
+          );
+
+        default:
+          return <div>{String(value)}</div>;
+      }
+    },
+    []
+  );
 
   const tableColumns: ColumnDef<TData>[] = React.useMemo(() => {
     const generatedColumns: ColumnDef<TData>[] = [];
@@ -203,7 +209,7 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
             : col.label,
         cell: ({ row }) => {
           const value = row.getValue(String(col.key));
-          return renderCellValue(value, col.type);
+          return renderCellValue(value, col.type, String(col.key)); // <--- penting: kirim key
         },
       });
     });
@@ -440,23 +446,23 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
         </div>
       </div>
 
-      <GuruDetailsDialog
+      <KelasDetailsDialog
         open={viewModalOpen}
         onOpenChange={setViewModalOpen}
-        item={selectedItem}
+        item={selectedItem as KelasWithRelations | null}
       />
 
-      {/* Menggunakan casting 'as unknown as Siswa' untuk mengatasi masalah tipe */}
-      <EditSiswaDialog
+      {/* Menggunakan casting 'as unknown as Guru' untuk mengatasi masalah tipe */}
+      <EditGuruDialog
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        item={selectedItem as unknown as SiswaBasic}
+        item={selectedItem as unknown as Guru}
       />
 
-      <DeleteSiswaDialog
+      <DeleteGuruDialog
         open={editModalDeleteOpen}
         onOpenChange={setEditModalDeleteOpen}
-        item={selectedItem as unknown as SiswaBasic}
+        item={selectedItem as unknown as Guru}
       />
     </div>
   );

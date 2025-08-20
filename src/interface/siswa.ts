@@ -1,32 +1,126 @@
-export type Gender = "LAKI_LAKI" | "PEREMPUAN";
-export type Agama =
-  | "ISLAM"
-  | "KRISTEN"
-  | "KATOLIK"
-  | "HINDU"
-  | "BUDDHA"
-  | "KONGHUCU";
+import { Gender, Agama } from "./enums";
+import { User } from "./user";
+import { Beasiswa } from "./beasiswa";
+import { Kelas } from "./kelas";
+import { Pembayaran } from "./pembayaran";
 
 export interface Siswa {
   id: string;
   createdAt: Date;
   updatedAt: Date;
   namaLengkap: string;
+  nisn?: string;
+  nik?: string;
+  tempatLahir?: string;
+  tanggalLahir?: Date;
+  jenisKelamin?: Gender;
+  agama?: Agama;
+  noHp?: string;
+  emailAlternatif?: string;
+  alamatLengkap?: string;
+  kelurahan?: string;
+  statsuSiswa?: string;
+  kecamatan?: string;
+  kabupatenKota?: string;
+  provinsi?: string;
+  kodePos?: string;
+  tahunMasuk?: number;
+  namaAyah?: string;
+  namaIbu?: string;
+  namaWali?: string;
+  pekerjaanAyah?: string;
+  pekerjaanIbu?: string;
+  pekerjaanWali?: string;
+  noHpOrtu?: string;
+  isProfileComplete: boolean;
+  userId: string;
+  user?: User;
+  Beasiswa?: Beasiswa[];
+  kelas?: Kelas[];
+  Pembayaran?: Pembayaran[];
+}
+
+export interface SiswaCreateInput {
+  id?: string;
+  namaLengkap: string;
+  nisn?: string;
+  nik?: string;
+  tempatLahir?: string;
+  tanggalLahir?: Date;
+  jenisKelamin?: Gender;
+  agama?: Agama;
+  noHp?: string;
+  emailAlternatif?: string;
+  alamatLengkap?: string;
+  kelurahan?: string;
+  statsuSiswa?: string;
+  kecamatan?: string;
+  kabupatenKota?: string;
+  provinsi?: string;
+  kodePos?: string;
+  tahunMasuk?: number;
+  namaAyah?: string;
+  namaIbu?: string;
+  namaWali?: string;
+  pekerjaanAyah?: string;
+  pekerjaanIbu?: string;
+  pekerjaanWali?: string;
+  noHpOrtu?: string;
+  isProfileComplete?: boolean;
+  userId: string;
+}
+
+export interface SiswaUpdateInput {
+  namaLengkap?: string;
+  nisn?: string;
+  nik?: string;
+  tempatLahir?: string;
+  tanggalLahir?: Date;
+  jenisKelamin?: Gender;
+  agama?: Agama;
+  noHp?: string;
+  emailAlternatif?: string;
+  alamatLengkap?: string;
+  kelurahan?: string;
+  statsuSiswa?: string;
+  kecamatan?: string;
+  kabupatenKota?: string;
+  provinsi?: string;
+  kodePos?: string;
+  tahunMasuk?: number;
+  namaAyah?: string;
+  namaIbu?: string;
+  namaWali?: string;
+  pekerjaanAyah?: string;
+  pekerjaanIbu?: string;
+  pekerjaanWali?: string;
+  noHpOrtu?: string;
+  isProfileComplete?: boolean;
+  userId?: string;
+}
+
+// FIXED: Interface untuk data siswa tanpa relasi (dari Prisma findMany tanpa include)
+export interface SiswaBasic {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  namaLengkap: string;
   nisn: string | null;
   nik: string | null;
   tempatLahir: string | null;
   tanggalLahir: Date | null;
-  jenisKelamin: Gender | null;
+  jenisKelamin: Gender | null; // CHANGED: Removed undefined
   agama: Agama | null;
   noHp: string | null;
   emailAlternatif: string | null;
   alamatLengkap: string | null;
   kelurahan: string | null;
+  statsuSiswa: string | null;
   kecamatan: string | null;
   kabupatenKota: string | null;
   provinsi: string | null;
   kodePos: string | null;
-  kelas: string | null;
   tahunMasuk: number | null;
   namaAyah: string | null;
   namaIbu: string | null;
@@ -36,6 +130,11 @@ export interface Siswa {
   pekerjaanWali: string | null;
   noHpOrtu: string | null;
   isProfileComplete: boolean;
-  userId: string;
-  user?: string;
+}
+
+export interface SiswaWithRelations extends Siswa {
+  user: User;
+  Beasiswa: Beasiswa[];
+  kelas: Kelas[];
+  Pembayaran: Pembayaran[];
 }
