@@ -1,22 +1,29 @@
-import { prisma } from "@/lib/prisma";
 import AdminLayout from "../layout/layout";
 
 import {
-  DataTable,
+  DataTableSiswa,
   TableColumn,
-} from "../teachers-staff/_component/table-reusable";
-
-import CreateAccountStudentsModal from "../_components/students/modalCreateAcoount";
+} from "./_components/table-reusable-siswa";
+import CreateAccountStudentsModal from "./_components/modalCreateAcoount";
+import { getDataGuru } from "./actions/dataGuru";
 
 export default async function Page() {
-  const getDataGuru = await prisma.siswa.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const dataGuru = await getDataGuru();
 
   // Definisikan kolom yang ingin ditampilkan dengan type yang fleksibel
-  const columns: TableColumn<(typeof getDataGuru)[0]>[] = [
+  const columns: TableColumn<(typeof dataGuru)[0]>[] = [
+    {
+      key: "id",
+      label: "ID",
+      sortable: true,
+      type: "text",
+    },
+    {
+      key: "userId",
+      label: "User ID",
+      sortable: true,
+      type: "text",
+    },
     {
       key: "namaLengkap",
       label: "Nama Lengkap",
@@ -54,16 +61,16 @@ export default async function Page() {
       <div className="grid auto-rows-min gap-4 md:grid-cols-1">
         {/* Header dengan tombol Add New Account */}
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Manage Accounts Students</h1>
+          <h1 className="text-2xl font-bold">Manajemen Siswa</h1>
           <CreateAccountStudentsModal />
         </div>
 
         {/* Data Table */}
-        <DataTable
-          data={getDataGuru}
+        <DataTableSiswa
+          data={dataGuru}
           columns={columns}
           searchKey="namaLengkap"
-          searchPlaceholder="Filter nama guru..."
+          searchPlaceholder="Filter nama siswa..."
           showSelection={true}
           showColumnToggle={true}
           showActions={true}

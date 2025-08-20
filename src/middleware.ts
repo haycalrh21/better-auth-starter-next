@@ -3,7 +3,6 @@ import { getSessionCookie } from "better-auth/cookies";
 
 const protectedRoutes = ["/guru", "/admin", "/siswa"];
 
-// Mapping untuk check route access (lowercase untuk URL)
 const roleToRoute = {
   ADMIN: "admin",
   GURU: "guru",
@@ -17,7 +16,6 @@ const roleDashboards = {
   ADMIN: "/admin/dashboard",
   GURU: "/guru/dashboard",
   SISWA: "/siswa/dashboard",
-  // Fallback untuk lowercase
   admin: "/admin/dashboard",
   guru: "/guru/dashboard",
   siswa: "/siswa/dashboard",
@@ -27,7 +25,6 @@ export async function middleware(request: NextRequest) {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
 
-  // Cek session cookie dulu
   const sessionCookie = getSessionCookie(request);
   const isLoggedIn = !!sessionCookie;
 
@@ -35,24 +32,21 @@ export async function middleware(request: NextRequest) {
   console.log("Pathname:", pathname);
   console.log("Session cookie exists:", isLoggedIn);
 
-  // Jika user belum login dan mengakses protected routes
-  if (
-    protectedRoutes.some((route) => pathname.startsWith(route)) &&
-    !isLoggedIn
-  ) {
+  const segments = pathname.split("/").filter(Boolean);
+  const firstSegment = segments[0];
+
+  // Belum login tapi akses protected route
+  if (protectedRoutes.includes(`/${firstSegment}`) && !isLoggedIn) {
+    console.log("Not logged in, redirecting to login page");
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Jika user sudah login
   if (isLoggedIn) {
     try {
-      // Fetch session data untuk mendapatkan role
       const sessionResponse = await fetch(
         new URL("/api/auth/get-session", request.url),
         {
-          headers: {
-            cookie: request.headers.get("cookie") || "",
-          },
+          headers: { cookie: request.headers.get("cookie") || "" },
         }
       );
 
@@ -63,7 +57,7 @@ export async function middleware(request: NextRequest) {
         console.log("User role:", userRole);
         console.log("Session data:", sessionData);
 
-        // Jika user mengakses root path "/" (login page)
+        // Redirect dari login page ke dashboard
         if (pathname === "/") {
           if (
             userRole &&
@@ -80,29 +74,23 @@ export async function middleware(request: NextRequest) {
               )
             );
           } else {
-            console.log("No valid role found for user, role:", userRole);
-            // Jika tidak ada role yang valid, redirect ke halaman umum atau tetap di login
+            console.log("No valid role found, stay on login page");
             return NextResponse.next();
           }
         }
 
-        // Cek akses role-based routes
+        // Cek akses role-based routes - CUMA CEK ROLE, GAK CEK SUB-PATH
         if (userRole) {
           const userRoutePrefix =
             roleToRoute[userRole as keyof typeof roleToRoute];
 
-          // Jika user mencoba akses route yang tidak sesuai dengan rolenya
-          const isAccessingWrongRole = protectedRoutes.some((route) => {
-            if (pathname.startsWith(route)) {
-              // Cek apakah route ini bukan milik role user
-              return !pathname.startsWith(`/${userRoutePrefix}`);
-            }
-            return false;
-          });
-
-          if (isAccessingWrongRole) {
+          // Jika user akses route protected tapi salah role (misal SISWA akses /admin)
+          if (
+            protectedRoutes.includes(`/${firstSegment}`) &&
+            firstSegment !== userRoutePrefix
+          ) {
             console.log(
-              "Wrong role access, redirecting to:",
+              "Wrong role access, redirecting to dashboard:",
               roleDashboards[userRole as keyof typeof roleDashboards]
             );
             return NextResponse.redirect(
@@ -115,19 +103,13 @@ export async function middleware(request: NextRequest) {
         }
       } else {
         console.log("Session API response not ok:", sessionResponse.status);
-        // Jika API gagal tapi ada session cookie, kemungkinan session expired
-        if (pathname === "/") {
-          // Jika sudah di login page, biarkan saja
-          return NextResponse.next();
-        } else {
-          // Jika akses route lain tapi session invalid, redirect ke login
+        if (pathname !== "/") {
+          console.log("Redirecting to login page due to invalid session");
           return NextResponse.redirect(new URL("/", request.url));
         }
       }
     } catch (error) {
       console.error("Error fetching session:", error);
-      // Jika error, tapi masih ada session cookie, mungkin network issue
-      // Untuk sementara biarkan request lanjut
       return NextResponse.next();
     }
   }
@@ -137,8 +119,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Exclude static files and API routes
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -4,12 +4,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { AppSidebarAdmin } from "../_components/app-sidebar-admin";
+
 import { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminBreadcrumb } from "../_components/breadCrumb";
+import AppSidebarAdmin from "../_components/app-sidebar-admin";
+import { CommandMenu } from "../_components/commands";
 
 export default async function AdminLayout({
   children,
@@ -21,12 +23,13 @@ export default async function AdminLayout({
   });
 
   if (session?.user.role !== "ADMIN") {
-    redirect("/profile");
+    redirect("/");
   }
 
   // console.log("Admin Layout Session:", session?.user);
   return (
     <SidebarProvider>
+      <CommandMenu />
       <AppSidebarAdmin user={session.user} />
 
       <SidebarInset>

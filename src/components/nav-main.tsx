@@ -18,6 +18,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { ModeToggle } from "./ui/dark-mode-toggle";
 
 interface NavItem {
   title: string;
@@ -70,6 +71,7 @@ export function NavMain({ items }: { items: MainNavItem[] }) {
 
   return (
     <>
+      <ModeToggle />
       {groupedCategories.map((category) => (
         <SidebarGroup key={category.label}>
           <SidebarGroupLabel>{category.label}</SidebarGroupLabel>
@@ -89,6 +91,7 @@ export function NavMain({ items }: { items: MainNavItem[] }) {
                       <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
+
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (

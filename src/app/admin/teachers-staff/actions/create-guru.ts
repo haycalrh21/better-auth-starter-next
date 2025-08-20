@@ -1,4 +1,4 @@
-// create-guru.ts - HAPUS revalidateTag dari sini
+// create-guru.ts
 "use server";
 
 import { auth } from "@/lib/auth";
@@ -73,14 +73,12 @@ export async function createGuru(formData: FormData) {
       });
     }
 
-    // Delay revalidation supaya modal keburu nutup dulu
-
     revalidatePath("/admin/teachers-staff");
   } catch (err) {
     if (err instanceof APIError && err.body?.code === "USER_ALREADY_EXISTS") {
-      return { success: false, error: "Email already exists" };
+      throw new Error("Email sudah terdaftar");
     }
     console.error("❌ createGuru error:", err);
-    return { success: false, error: "Registration failed" };
+    throw new Error("Registrasi gagal, coba lagi nanti");
   }
 }

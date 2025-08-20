@@ -3,7 +3,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import {
   userCreateSchema,
 } from "@/app/admin/schemas/guruSchema";
 import { objectToFormData } from "@/utils/objectToFormData";
-import { createGuru } from "../actions/create-guru";
+import { createGuru } from "@/app/admin/teachers-staff/actions/create-guru";
 
 import {
   Dialog,
@@ -30,9 +30,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-export default function CreateAccountModalComponent() {
-  // persist open state across hot reload
+export default function CreateAccountStudentsModal() {
   const openRef = useRef(false);
   const [open, setOpen] = useState(openRef.current);
 
@@ -40,7 +38,6 @@ export default function CreateAccountModalComponent() {
     openRef.current = val; // simpan di ref supaya ga ilang pas HMR
     setOpen(val);
   };
-
   const {
     register,
     handleSubmit,
@@ -147,7 +144,7 @@ export default function CreateAccountModalComponent() {
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="GURU">GURU</SelectItem>
+                      <SelectItem value="SISWA">SISWA</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

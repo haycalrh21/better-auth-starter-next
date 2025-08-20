@@ -31,23 +31,23 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { GuruFormValues, guruSchema } from "../../schemas/editGuruSchema";
-import { editGuru } from "../../teachers-staff/actions/editGuru";
-import { Agama, Gender, Guru, StatusKawin } from "@/interface/guru";
 
-// Asumsikan tipe ini ada di proyek Anda
+import { editSiswa } from "../actions/editSiswa";
+import { SiswaFormValues, siswaSchema } from "../schema/editSiswaSchema";
+import { objectToFormData } from "@/utils/objectToFormData";
+import { Agama, Gender, Siswa } from "@/interface/siswa";
 
-interface EditGuruDialogProps {
+interface EditSiswaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: Guru | null;
-  //   onSave: (editedItem: Guru) => void; // onSave adalah bagian dari props?
+  item: Siswa | null;
 }
-export function EditGuruDialog({
+
+export function EditSiswaDialog({
   open,
   onOpenChange,
   item,
-}: EditGuruDialogProps) {
+}: EditSiswaDialogProps) {
   const [isSaving, setIsSaving] = React.useState(false);
 
   const {
@@ -57,17 +57,18 @@ export function EditGuruDialog({
     watch,
     reset,
     formState: { errors },
-  } = useForm<GuruFormValues>({
-    resolver: zodResolver(guruSchema),
+  } = useForm<SiswaFormValues>({
+    resolver: zodResolver(siswaSchema),
   });
 
   const watchedForm = watch();
+  console.log(item?.tanggalLahir, "tanggalLahir");
 
   React.useEffect(() => {
     if (open && item) {
       reset({
         namaLengkap: item.namaLengkap,
-        nip: item.nip ?? "",
+        nisn: item.nisn ?? "",
         nik: item.nik ?? "",
         tempatLahir: item.tempatLahir ?? "",
         noHp: item.noHp ?? "",
@@ -78,37 +79,35 @@ export function EditGuruDialog({
         kabupatenKota: item.kabupatenKota ?? "",
         provinsi: item.provinsi ?? "",
         kodePos: item.kodePos ?? "",
-        pendidikanTerakhir: item.pendidikanTerakhir ?? "",
-        jurusan: item.jurusan ?? "",
-        institusi: item.institusi ?? "",
-        statusKepegawaian: item.statusKepegawaian ?? "",
-        golongan: item.golongan ?? "",
-        pangkat: item.pangkat ?? "",
-        bidangStudi: item.bidangStudi ?? "",
+        kelas: item.kelas ?? "",
+        namaAyah: item.namaAyah ?? "",
+        namaIbu: item.namaIbu ?? "",
+        namaWali: item.namaWali ?? "",
+        pekerjaanAyah: item.pekerjaanAyah ?? "",
+        pekerjaanIbu: item.pekerjaanIbu ?? "",
+        pekerjaanWali: item.pekerjaanWali ?? "",
+        noHpOrtu: item.noHpOrtu ?? "",
 
         tanggalLahir: item.tanggalLahir
           ? new Date(item.tanggalLahir)
           : undefined,
-        tmt: item.tmt ? new Date(item.tmt) : undefined,
-        tahunLulus: item.tahunLulus ?? undefined,
+        tahunMasuk: item.tahunMasuk ?? undefined,
 
         jenisKelamin: item.jenisKelamin ?? undefined,
         agama: item.agama ?? undefined,
-        statusKawin: item.statusKawin ?? undefined,
       });
     }
   }, [open, item, reset]);
 
-  // ... (kode yang sama)
-
-  const onSubmit: SubmitHandler<GuruFormValues> = async (data) => {
+  const onSubmit: SubmitHandler<SiswaFormValues> = async (data) => {
     if (!item) return;
 
     setIsSaving(true);
     try {
-      const result = await editGuru(item.id, data);
+      const formData = objectToFormData(data);
+      const result = await editSiswa(item.id, formData);
       if (result.success) {
-        // HAPUS BARIS INI
+        console.log(result, "formData");
         onOpenChange(false);
       } else {
         console.error(result.error);
@@ -120,14 +119,13 @@ export function EditGuruDialog({
     }
   };
 
-  // ... (sisa kode yang sama)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Data Guru</DialogTitle>
+          <DialogTitle>Edit Data Siswa</DialogTitle>
           <DialogDescription>
-            Ubah informasi guru di sini. Klik simpan saat selesai.
+            Ubah informasi siswa di sini. Klik simpan saat selesai.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
@@ -146,16 +144,16 @@ export function EditGuruDialog({
             </div>
           </div>
 
-          {/* NIP */}
+          {/* NISN */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nip" className="text-right">
-              NIP
+            <Label htmlFor="nisn" className="text-right">
+              NISN
             </Label>
             <div className="col-span-3">
-              <Input id="nip" {...register("nip")} />
-              {errors.nip && (
+              <Input id="nisn" {...register("nisn")} />
+              {errors.nisn && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.nip.message}
+                  {errors.nisn.message}
                 </p>
               )}
             </div>
@@ -239,7 +237,6 @@ export function EditGuruDialog({
               )}
             </div>
           </div>
-
           {/* Jenis Kelamin */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="jenisKelamin" className="text-right">
@@ -298,36 +295,6 @@ export function EditGuruDialog({
             </div>
           </div>
 
-          {/* Status Kawin */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="statusKawin" className="text-right">
-              Status Kawin
-            </Label>
-            <div className="col-span-3">
-              <Select
-                value={watchedForm.statusKawin}
-                onValueChange={(value) =>
-                  setValue("statusKawin", value as StatusKawin)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Status Kawin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BELUM_KAWIN">Belum Kawin</SelectItem>
-                  <SelectItem value="KAWIN">Kawin</SelectItem>
-                  <SelectItem value="CERAI_HIDUP">Cerai Hidup</SelectItem>
-                  <SelectItem value="CERAI_MATI">Cerai Mati</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.statusKawin && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.statusKawin.message}
-                </p>
-              )}
-            </div>
-          </div>
-
           {/* No. HP */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="noHp" className="text-right">
@@ -351,8 +318,8 @@ export function EditGuruDialog({
             <div className="col-span-3">
               <Input
                 id="emailAlternatif"
+                type="email"
                 {...register("emailAlternatif")}
-                disabled
               />
               {errors.emailAlternatif && (
                 <p className="mt-1 text-sm text-red-500">
@@ -452,179 +419,140 @@ export function EditGuruDialog({
             </div>
           </div>
 
-          {/* Pendidikan Terakhir */}
+          {/* Kelas */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pendidikanTerakhir" className="text-right">
-              Pendidikan Terakhir
+            <Label htmlFor="kelas" className="text-right">
+              Kelas
             </Label>
             <div className="col-span-3">
-              <Input
-                id="pendidikanTerakhir"
-                {...register("pendidikanTerakhir")}
-              />
-              {errors.pendidikanTerakhir && (
+              <Input id="kelas" {...register("kelas")} />
+              {errors.kelas && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.pendidikanTerakhir.message}
+                  {errors.kelas.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Jurusan */}
+          {/* Tahun Masuk */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="jurusan" className="text-right">
-              Jurusan
-            </Label>
-            <div className="col-span-3">
-              <Input id="jurusan" {...register("jurusan")} />
-              {errors.jurusan && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.jurusan.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Tahun Lulus */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tahunLulus" className="text-right">
-              Tahun Lulus
+            <Label htmlFor="tahunMasuk" className="text-right">
+              Tahun Masuk
             </Label>
             <div className="col-span-3">
               <Input
-                id="tahunLulus"
+                id="tahunMasuk"
                 type="number"
-                {...register("tahunLulus", { valueAsNumber: true })}
+                {...register("tahunMasuk", { valueAsNumber: true })}
               />
-              {errors.tahunLulus && (
+              {errors.tahunMasuk && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.tahunLulus.message}
+                  {errors.tahunMasuk.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Institusi */}
+          {/* Nama Ayah */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="institusi" className="text-right">
-              Institusi
+            <Label htmlFor="namaAyah" className="text-right">
+              Nama Ayah
             </Label>
             <div className="col-span-3">
-              <Input id="institusi" {...register("institusi")} />
-              {errors.institusi && (
+              <Input id="namaAyah" {...register("namaAyah")} />
+              {errors.namaAyah && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.institusi.message}
+                  {errors.namaAyah.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Status Kepegawaian */}
+          {/* Nama Ibu */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="statusKepegawaian" className="text-right">
-              Status Kepegawaian
+            <Label htmlFor="namaIbu" className="text-right">
+              Nama Ibu
             </Label>
             <div className="col-span-3">
-              <Input
-                id="statusKepegawaian"
-                {...register("statusKepegawaian")}
-              />
-              {errors.statusKepegawaian && (
+              <Input id="namaIbu" {...register("namaIbu")} />
+              {errors.namaIbu && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.statusKepegawaian.message}
+                  {errors.namaIbu.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Golongan */}
+          {/* Nama Wali */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="golongan" className="text-right">
-              Golongan
+            <Label htmlFor="namaWali" className="text-right">
+              Nama Wali
             </Label>
             <div className="col-span-3">
-              <Input id="golongan" {...register("golongan")} />
-              {errors.golongan && (
+              <Input id="namaWali" {...register("namaWali")} />
+              {errors.namaWali && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.golongan.message}
+                  {errors.namaWali.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Pangkat */}
+          {/* Pekerjaan Ayah */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pangkat" className="text-right">
-              Pangkat
+            <Label htmlFor="pekerjaanAyah" className="text-right">
+              Pekerjaan Ayah
             </Label>
             <div className="col-span-3">
-              <Input id="pangkat" {...register("pangkat")} />
-              {errors.pangkat && (
+              <Input id="pekerjaanAyah" {...register("pekerjaanAyah")} />
+              {errors.pekerjaanAyah && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.pangkat.message}
+                  {errors.pekerjaanAyah.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* TMT (Terhitung Mulai Tugas) */}
+          {/* Pekerjaan Ibu */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tmt" className="text-right">
-              TMT
+            <Label htmlFor="pekerjaanIbu" className="text-right">
+              Pekerjaan Ibu
             </Label>
             <div className="col-span-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !watchedForm.tmt && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {watchedForm.tmt ? (
-                      format(watchedForm.tmt, "PPP", { locale: id })
-                    ) : (
-                      <span>Pilih Tanggal</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={watchedForm.tmt}
-                    disabled={(d) =>
-                      d.getMonth() !== new Date().getMonth() ||
-                      d.getFullYear() !== new Date().getFullYear()
-                    }
-                    onSelect={(date) => {
-                      if (date) {
-                        setValue("tmt", date);
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.tmt && (
+              <Input id="pekerjaanIbu" {...register("pekerjaanIbu")} />
+              {errors.pekerjaanIbu && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.tmt.message}
+                  {errors.pekerjaanIbu.message}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Bidang Studi */}
+          {/* Pekerjaan Wali */}
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="bidangStudi" className="text-right">
-              Bidang Studi
+            <Label htmlFor="pekerjaanWali" className="text-right">
+              Pekerjaan Wali
             </Label>
             <div className="col-span-3">
-              <Input id="bidangStudi" {...register("bidangStudi")} />
-              {errors.bidangStudi && (
+              <Input id="pekerjaanWali" {...register("pekerjaanWali")} />
+              {errors.pekerjaanWali && (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.bidangStudi.message}
+                  {errors.pekerjaanWali.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* No. HP Orang Tua/Wali */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="noHpOrtu" className="text-right">
+              No. HP Ortu/Wali
+            </Label>
+            <div className="col-span-3">
+              <Input id="noHpOrtu" {...register("noHpOrtu")} />
+              {errors.noHpOrtu && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.noHpOrtu.message}
                 </p>
               )}
             </div>

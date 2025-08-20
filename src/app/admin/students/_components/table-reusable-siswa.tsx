@@ -51,11 +51,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { EditGuruDialog } from "./edit-data"; // Pastikan Anda mengimpor Guru juga
-import { Guru } from "@/interface/guru";
-import { GuruDetailsDialog } from "./viewData";
-
-import DeleteGuruDialog from "./delete-guru";
+import { GuruDetailsDialog } from "../../teachers-staff/_component/viewData";
+import { EditSiswaDialog } from "./edit-data-siswa";
+import { Siswa } from "@/interface/siswa";
+import DeleteSiswaDialog from "./delete-siswa";
 
 // Type untuk definisi kolom yang sederhana
 export interface TableColumn<TData> {
@@ -76,7 +75,7 @@ interface DataTableProps<TData extends Record<string, unknown>> {
   showActions?: boolean;
 }
 
-export function DataTable<TData extends Record<string, unknown>>({
+export function DataTableSiswa<TData extends Record<string, unknown>>({
   data,
   columns,
   searchKey,
@@ -446,17 +445,17 @@ export function DataTable<TData extends Record<string, unknown>>({
         item={selectedItem}
       />
 
-      {/* Menggunakan casting 'as unknown as Guru' untuk mengatasi masalah tipe */}
-      <EditGuruDialog
+      {/* Menggunakan casting 'as unknown as Siswa' untuk mengatasi masalah tipe */}
+      <EditSiswaDialog
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        item={selectedItem as unknown as Guru}
+        item={selectedItem as unknown as Siswa}
       />
 
-      <DeleteGuruDialog
+      <DeleteSiswaDialog
         open={editModalDeleteOpen}
         onOpenChange={setEditModalDeleteOpen}
-        item={selectedItem as unknown as Guru}
+        item={selectedItem as unknown as Siswa}
       />
     </div>
   );

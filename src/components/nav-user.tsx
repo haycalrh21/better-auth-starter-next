@@ -28,17 +28,23 @@ import {
 import { SignOutButton } from "./sign-out-button";
 
 type UserSession = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
   image?: string | null;
   banned?: boolean;
 };
-export function NavUser({ user }: { user: UserSession }) {
+
+export function NavUser({ user }: { user?: UserSession }) {
   const { isMobile } = useSidebar();
 
-  const parts = user.name.trim().split(/\s+/);
+  // Handle case when user is undefined or name is undefined
+  const userName = user?.name ?? "Guest";
+  const userEmail = user?.email ?? "guest@example.com";
+  const userImage = user?.image ?? undefined;
+
+  const parts = userName.trim().split(/\s+/);
   const nameImage =
     parts.length > 1
       ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -54,14 +60,14 @@ export function NavUser({ user }: { user: UserSession }) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user?.name} alt={user?.name} />
+                <AvatarImage src={userImage} alt={userName} />
                 <AvatarFallback className="rounded-lg">
                   {nameImage}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{userName}</span>
+                <span className="truncate text-xs">{userEmail}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -75,18 +81,15 @@ export function NavUser({ user }: { user: UserSession }) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    src={user?.image ?? undefined}
-                    alt={user?.name}
-                  />
+                  <AvatarImage src={userImage} alt={userName} />
                   <AvatarFallback className="rounded-lg">
                     {nameImage}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{userName}</span>
+                  <span className="truncate text-xs">{userEmail}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
