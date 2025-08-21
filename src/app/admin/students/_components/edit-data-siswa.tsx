@@ -35,12 +35,12 @@ import { id } from "date-fns/locale";
 import { editSiswa } from "../actions/editSiswa";
 import { SiswaFormValues, siswaSchema } from "../schema/editSiswaSchema";
 import { objectToFormData } from "@/utils/objectToFormData";
-import { Agama, Gender, SiswaBasic } from "@/interface";
+import { Agama, Gender, SiswaWithRelations } from "@/interface";
 
 interface EditSiswaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: SiswaBasic | null;
+  item: SiswaWithRelations | null;
 }
 
 export function EditSiswaDialog({
@@ -62,7 +62,7 @@ export function EditSiswaDialog({
   });
 
   const watchedForm = watch();
-  console.log(item?.tanggalLahir, "tanggalLahir");
+  // console.log(item?.tanggalLahir, "tanggalLahir");
 
   React.useEffect(() => {
     if (open && item) {
@@ -79,6 +79,7 @@ export function EditSiswaDialog({
         kabupatenKota: item.kabupatenKota ?? "",
         provinsi: item.provinsi ?? "",
         kodePos: item.kodePos ?? "",
+        kelas: item.kelas?.[0]?.namaKelas ?? "",
 
         namaAyah: item.namaAyah ?? "",
         namaIbu: item.namaIbu ?? "",
@@ -313,13 +314,14 @@ export function EditSiswaDialog({
           {/* Email Alternatif */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="emailAlternatif" className="text-right">
-              Email Alternatif
+              Email
             </Label>
             <div className="col-span-3">
               <Input
                 id="emailAlternatif"
                 type="email"
                 {...register("emailAlternatif")}
+                disabled
               />
               {errors.emailAlternatif && (
                 <p className="mt-1 text-sm text-red-500">
@@ -425,7 +427,7 @@ export function EditSiswaDialog({
               Kelas
             </Label>
             <div className="col-span-3">
-              <Input id="kelas" {...register("kelas")} />
+              <Input id="kelas" {...register("kelas")} disabled />
               {errors.kelas && (
                 <p className="mt-1 text-sm text-red-500">
                   {errors.kelas.message}

@@ -20,7 +20,7 @@ import {
   MoreHorizontal,
   Eye,
   Trash2,
-  Pencil, // Tambahkan impor ini
+  Pencil,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,21 +51,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { GuruDetailsDialog } from "../../teachers-staff/_component/viewData";
 import { EditSiswaDialog } from "./edit-data-siswa";
 
 import DeleteSiswaDialog from "./delete-siswa";
-import { SiswaBasic } from "@/interface";
+import { SiswaBasic, SiswaWithRelations } from "@/interface";
+import { SiswaDetailsDialog } from "./viewDataSsiswa";
 
-// Type untuk definisi kolom yang sederhana
 export interface TableColumn<TData> {
-  key: keyof TData;
+  key: keyof TData | string; // 🔥 fleksibel
   label: string;
   sortable?: boolean;
   type?: "text" | "email" | "date" | "boolean" | "number" | "truncate";
 }
 
-// Perbaiki generic type untuk DataTable
 interface DataTableProps<TData extends Record<string, unknown>> {
   data: TData[];
   columns: TableColumn<TData>[];
@@ -76,7 +74,19 @@ interface DataTableProps<TData extends Record<string, unknown>> {
   showActions?: boolean;
 }
 
-export function DataTableSiswa<TData extends Record<string, unknown>>({
+function getValueByPath<T extends object>(obj: T, path: string): unknown {
+  return path.split(".").reduce<unknown>((acc, part) => {
+    if (Array.isArray(acc)) {
+      return (acc[0] as Record<string, unknown>)?.[part];
+    }
+    if (typeof acc === "object" && acc !== null) {
+      return (acc as Record<string, unknown>)[part];
+    }
+    return undefined;
+  }, obj);
+}
+
+export function DataTable<TData extends Record<string, unknown>>({
   data,
   columns,
   searchKey,
@@ -99,8 +109,8 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
   });
 
   const [viewModalOpen, setViewModalOpen] = React.useState(false);
-  const [editModalOpen, setEditModalOpen] = React.useState(false); // State baru
-  const [editModalDeleteOpen, setEditModalDeleteOpen] = React.useState(false); // State baru
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const [editModalDeleteOpen, setEditModalDeleteOpen] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState<TData | null>(null);
 
   const handleView = React.useCallback((item: TData) => {
@@ -108,57 +118,40 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
     setViewModalOpen(true);
   }, []);
 
-  // Perbarui fungsi handleEdit untuk membuka dialog edit
   const handleEdit = React.useCallback((item: TData) => {
     setSelectedItem(item);
     setEditModalOpen(true);
   }, []);
 
   const handleDelete = React.useCallback((item: TData) => {
-    // const confirmDelete = await deleteGuru(item.userId as string);
     setSelectedItem(item);
     setEditModalDeleteOpen(true);
   }, []);
 
   const renderCellValue = React.useCallback((value: unknown, type?: string) => {
-    if (value === null || value === undefined) {
-      return <div>-</div>;
-    }
-    // ... (kode renderCellValue tetap sama)
-    switch (type) {
-      case "date":
-        if (value instanceof Date) {
-          return <div>{value.toLocaleDateString("id-ID")}</div>;
-        }
-        return <div>{String(value)}</div>;
+    if (value === null || value === undefined) return <div>-</div>;
+    if (type === "boolean") return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
+    if (type === "number") return <div>{Number(value).toLocaleString()}</div>;
+    if (type === "date")
+      return <div>{new Date(String(value)).toLocaleDateString("id-ID")}</div>;
+    if (type === "email")
+      return <div className="lowercase text-blue-600">{String(value)}</div>;
+    if (type === "truncate")
+      return (
+        <div className="max-w-xs truncate" title={String(value)}>
+          {String(value)}
+        </div>
+      );
 
-      case "boolean":
-        return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
-
-      case "number":
-        return <div>{Number(value).toLocaleString()}</div>;
-
-      case "email":
-        return <div className="lowercase text-blue-600">{String(value)}</div>;
-
-      case "truncate":
-        return (
-          <div className="max-w-xs truncate" title={String(value)}>
-            {String(value)}
-          </div>
-        );
-
-      default:
-        return <div>{String(value)}</div>;
-    }
+    return <div>{String(value)}</div>;
   }, []);
 
   const tableColumns: ColumnDef<TData>[] = React.useMemo(() => {
     const generatedColumns: ColumnDef<TData>[] = [];
+
     if (showSelection) {
       generatedColumns.push({
         id: "select",
-        // ... (kode select tetap sama)
         header: ({ table }) => (
           <Checkbox
             checked={
@@ -185,7 +178,8 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
 
     columns.forEach((col) => {
       generatedColumns.push({
-        accessorKey: String(col.key),
+        id: String(col.key),
+        accessorFn: (row) => getValueByPath(row, String(col.key)),
         header:
           col.sortable !== false
             ? ({ column }) => (
@@ -196,14 +190,21 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
                   }
                   className="capitalize -ml-4 h-auto p-4"
                 >
-                  {col.label}
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                  {col.label} <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               )
             : col.label,
-        cell: ({ row }) => {
-          const value = row.getValue(String(col.key));
-          return renderCellValue(value, col.type);
+        cell: ({ getValue }) => renderCellValue(getValue(), col.type),
+        sortingFn: (rowA, rowB, columnId) => {
+          const a = (rowA.getValue<string | number | boolean>(columnId) ??
+            "") as string;
+          const b = (rowB.getValue<string | number | boolean>(columnId) ??
+            "") as string;
+
+          if (a === "-") return 1;
+          if (b === "-") return -1;
+
+          return String(a).localeCompare(String(b), "id", { numeric: true });
         },
       });
     });
@@ -249,6 +250,7 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
         },
       });
     }
+
     return generatedColumns;
   }, [
     columns,
@@ -283,7 +285,6 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
 
   return (
     <div className="w-full">
-      {/* ... (bagian atas tabel tetap sama) */}
       <div className="flex items-center py-4">
         {searchKey && (
           <Input
@@ -386,7 +387,6 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
         </Table>
       </div>
 
-      {/* ... (bagian bawah tabel tetap sama) */}
       <div className="flex items-center justify-between py-4">
         <div className="text-muted-foreground flex-1 text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
@@ -401,7 +401,7 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
                 table.setPageSize(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w>[70px]">
                 <SelectValue
                   placeholder={table.getState().pagination.pageSize}
                 />
@@ -440,17 +440,16 @@ export function DataTableSiswa<TData extends Record<string, unknown>>({
         </div>
       </div>
 
-      <GuruDetailsDialog
+      <SiswaDetailsDialog
         open={viewModalOpen}
         onOpenChange={setViewModalOpen}
-        item={selectedItem}
+        item={selectedItem as unknown as SiswaWithRelations}
       />
 
-      {/* Menggunakan casting 'as unknown as Siswa' untuk mengatasi masalah tipe */}
       <EditSiswaDialog
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        item={selectedItem as unknown as SiswaBasic}
+        item={selectedItem as unknown as SiswaWithRelations}
       />
 
       <DeleteSiswaDialog

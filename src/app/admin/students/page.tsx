@@ -1,26 +1,20 @@
 import AdminLayout from "../layout/layout";
 
-import {
-  DataTableSiswa,
-  TableColumn,
-} from "./_components/table-reusable-siswa";
+import { DataTable, TableColumn } from "./_components/table-reusable-siswa";
 import CreateAccountStudentsModal from "./_components/modalCreateAcoount";
-import { getDataGuru } from "./actions/dataGuru";
+import { getDataSiswa } from "./actions/dataSiswa";
 
 export default async function Page() {
-  const dataGuru = await getDataGuru();
+  const dataSiswa = await getDataSiswa();
+  // console.log("Data Siswa:", dataSiswa);
+  // ambil langsung tipe dari dataSiswa
+  type DataSiswaType = typeof dataSiswa extends (infer U)[] ? U : never;
 
   // Definisikan kolom yang ingin ditampilkan dengan type yang fleksibel
-  const columns: TableColumn<(typeof dataGuru)[0]>[] = [
+  const columns: TableColumn<DataSiswaType>[] = [
     {
-      key: "id",
-      label: "ID",
-      sortable: true,
-      type: "text",
-    },
-    {
-      key: "userId",
-      label: "User ID",
+      key: "kelas.namaKelas", // ✅ ambil nama dari object kelas
+      label: "Kelas",
       sortable: true,
       type: "text",
     },
@@ -66,8 +60,8 @@ export default async function Page() {
         </div>
 
         {/* Data Table */}
-        <DataTableSiswa
-          data={dataGuru}
+        <DataTable
+          data={dataSiswa}
           columns={columns}
           searchKey="namaLengkap"
           searchPlaceholder="Filter nama siswa..."

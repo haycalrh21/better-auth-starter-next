@@ -1,5 +1,9 @@
 # Struktur Lengkap Website Sistem Informasi Sekolah Indonesia
 
+Stop-Process -Name node -Force
+npx tsx seeds.ts
+Remove-Item -Recurse -Force .\src\generated\prisma
+
 ## 🏫 DASHBOARD ADMIN
 
 ### Statistik Utama

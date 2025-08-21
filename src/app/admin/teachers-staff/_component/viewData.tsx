@@ -12,19 +12,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-// Definisikan tipe untuk props, membuatnya generik
-interface GuruDetailsDialogProps<TData extends Record<string, unknown>> {
+import { GuruWithRelations } from "@/interface";
+interface GuruDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  item: TData | null;
+  item: GuruWithRelations | null;
 }
 
-export function GuruDetailsDialog<TData extends Record<string, unknown>>({
+export function GuruDetailsDialog({
   open,
   onOpenChange,
   item,
-}: GuruDetailsDialogProps<TData>) {
+}: GuruDetailsDialogProps) {
   if (!item) {
     return null; // Jangan render apapun jika tidak ada item yang dipilih
   }
@@ -285,7 +284,11 @@ export function GuruDetailsDialog<TData extends Record<string, unknown>>({
                 <span className="font-medium text-sm text-gray-600">
                   Kelas:
                 </span>
-                <span className="text-sm">{String(item.kelas || "-")}</span>
+                <span className="text-sm">
+                  {item.kelas && item.kelas.length > 0
+                    ? item.kelas.map((k) => k.namaKelas).join(", ")
+                    : "-"}
+                </span>
               </div>
             </div>
           </div>

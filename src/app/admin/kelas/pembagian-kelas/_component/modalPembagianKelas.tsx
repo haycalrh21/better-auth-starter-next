@@ -11,13 +11,13 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Guru, Siswa } from "@/interface";
+import { GuruWithRelations, Siswa } from "@/interface";
 import { toast } from "sonner";
 import { KelasData, saveRandomKelas } from "../actions/createPembagianKelas";
 
 type CreateRandomClassProps = {
   getSiswa: Siswa[];
-  getGuru?: Guru[];
+  getGuru?: GuruWithRelations[];
 };
 
 type KelasWithGuru = {
@@ -31,7 +31,8 @@ export default function CreateModalPembagianKelas({
 }: CreateRandomClassProps) {
   const openRef = useRef(false);
   const [open, setOpen] = useState(openRef.current);
-  const [jumlahKelas, setJumlahKelas] = useState<number>(2);
+  const [jumlahKelas, setJumlahKelas] = useState<number | "">("");
+
   const [hasilKelas, setHasilKelas] = useState<KelasWithGuru[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,12 +47,11 @@ export default function CreateModalPembagianKelas({
     openRef.current = val;
     setOpen(val);
     if (!val) {
-      // Reset form saat modal ditutup
       setHasilKelas([]);
+      setJumlahKelas("");
     }
   };
 
-  // Fungsi shuffle array
   const shuffleArray = <T,>(array: T[]): T[] => {
     const arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -61,33 +61,41 @@ export default function CreateModalPembagianKelas({
     return arr;
   };
 
-  // Random kelas ketika tombol diklik
   const randomKelas = () => {
     if (!getSiswa || getSiswa.length === 0) return;
+    if (!jumlahKelas || jumlahKelas < 1) {
+      toast.error("Jumlah kelas belum diisi!");
+      return;
+    }
 
-    // Shuffle siswa
-    const shuffledSiswa = shuffleArray(getSiswa);
+    // Filter siswa yang BELUM punya kelas
+    const siswaBelumPunyaKelas = getSiswa.filter(
+      (s) => !s.kelas || s.kelas.length === 0
+    );
+    if (siswaBelumPunyaKelas.length === 0) {
+      toast.error("Semua siswa sudah punya kelas!");
+      return;
+    }
 
-    // Shuffle guru jika ada
+    // Filter guru yang BELUM punya kelas
+    const guruBelumPunyaKelas = getGuru
+      ? getGuru.filter((g) => !g.kelas || g.kelas.length === 0)
+      : [];
+
+    const shuffledSiswa = shuffleArray(siswaBelumPunyaKelas);
     const shuffledGuru =
-      getGuru && getGuru.length > 0 ? shuffleArray(getGuru) : [];
+      guruBelumPunyaKelas.length > 0 ? shuffleArray(guruBelumPunyaKelas) : [];
 
-    // Buat array kelas kosong
     const kelasArr: KelasWithGuru[] = Array.from(
       { length: jumlahKelas },
-      () => ({
-        siswa: [],
-        guru: null,
-      })
+      () => ({ siswa: [], guru: null })
     );
 
-    // Map siswa ke kelas menggunakan modulo index
     shuffledSiswa.forEach((siswa, index) => {
       const nama = siswa.namaLengkap ?? siswa.emailAlternatif ?? "-";
-      kelasArr[index % jumlahKelas].siswa.push(nama);
+      kelasArr[index % (jumlahKelas as number)].siswa.push(nama);
     });
 
-    // Assign guru ke setiap kelas (1 guru per kelas)
     kelasArr.forEach((kelas, index) => {
       if (shuffledGuru[index]) {
         kelas.guru =
@@ -100,21 +108,15 @@ export default function CreateModalPembagianKelas({
     setHasilKelas(kelasArr);
   };
 
-  // Function untuk save kelas ke database
   const handleSaveKelas = async () => {
     if (hasilKelas.length === 0) {
-      toast.success(
-        "Tidak ada kelas yang dihasilkan. Silakan random kelas terlebih dahulu."
-      );
+      toast.error("Belum ada kelas. Silakan random dulu!");
       return;
     }
 
-    // Validasi semua kelas harus punya guru
     const kelasWithoutGuru = hasilKelas.filter((kelas) => !kelas.guru);
     if (kelasWithoutGuru.length > 0) {
-      toast.error(
-        "Tidak ada kelas yang dihasilkan. Silakan random kelas terlebih dahulu."
-      );
+      toast.error("Ada kelas yang belum punya guru!");
       return;
     }
 
@@ -130,13 +132,13 @@ export default function CreateModalPembagianKelas({
 
       if (result.success) {
         toast.success("Kelas berhasil disimpan!");
-        handleOpenChange(false); // Close modal
+        handleOpenChange(false);
       } else {
         toast.error(`Gagal menyimpan kelas: ${result.error}`);
       }
     } catch (error) {
       console.error("Error saving kelas:", error);
-      toast.error("Terjadi kesalahan saat menyimpan kelas. Silakan coba lagi.");
+      toast.error("Terjadi kesalahan saat menyimpan kelas.");
     } finally {
       setIsLoading(false);
     }
@@ -158,8 +160,7 @@ export default function CreateModalPembagianKelas({
           <DialogHeader>
             <DialogTitle>Random Pembagian Kelas</DialogTitle>
             <DialogDescription>
-              Tentukan jumlah kelas dan klik tombol untuk membagi siswa dan
-              assign guru.
+              Tentukan jumlah kelas lalu klik tombol random.
               <br />
               <span className="text-sm text-gray-600">
                 Total siswa: {getSiswa.length} | Total guru:{" "}
@@ -169,8 +170,7 @@ export default function CreateModalPembagianKelas({
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Form Configuration */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4  rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-lg">
               <div className="space-y-2">
                 <Label htmlFor="tahun-ajaran">Tahun Ajaran</Label>
                 <Input
@@ -188,7 +188,7 @@ export default function CreateModalPembagianKelas({
                   id="semester"
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md"
                 >
                   <option value="1">Semester 1</option>
                   <option value="2">Semester 2</option>
@@ -214,31 +214,38 @@ export default function CreateModalPembagianKelas({
                   min={1}
                   max={maxKelas}
                   value={jumlahKelas}
-                  onChange={(e) =>
-                    setJumlahKelas(
-                      Math.max(1, Math.min(maxKelas, Number(e.target.value)))
-                    )
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setJumlahKelas("");
+                    } else {
+                      const num = Number(val);
+                      setJumlahKelas(Math.max(1, Math.min(maxKelas, num)));
+                    }
+                  }}
                   placeholder="Masukkan jumlah kelas"
                 />
               </div>
             </div>
 
-            {/* Info */}
             <div className="text-sm text-gray-500">
-              Maksimal {maxKelas} kelas (berdasarkan jumlah guru yang tersedia)
+              Maksimal {maxKelas} kelas
               <br />
-              Rata-rata {Math.ceil(getSiswa.length / jumlahKelas)} siswa per
-              kelas
+              {jumlahKelas && jumlahKelas > 0 && (
+                <>
+                  Rata-rata{" "}
+                  {Math.ceil(getSiswa.length / (jumlahKelas as number))} siswa
+                  per kelas
+                </>
+              )}
             </div>
 
-            {/* Action Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Button
                 type="button"
                 onClick={randomKelas}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={getSiswa.length === 0}
+                disabled={getSiswa.length === 0 || !jumlahKelas}
               >
                 {getSiswa.length === 0
                   ? "Tidak ada siswa"
@@ -255,7 +262,6 @@ export default function CreateModalPembagianKelas({
               </Button>
             </div>
 
-            {/* Hasil random */}
             {hasilKelas.length > 0 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">
@@ -301,7 +307,6 @@ export default function CreateModalPembagianKelas({
                   ))}
                 </div>
 
-                {/* Summary */}
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <h4 className="font-medium text-yellow-800">Ringkasan:</h4>
                   <div className="text-sm text-yellow-700 mt-1 grid grid-cols-2 gap-2">
@@ -316,7 +321,6 @@ export default function CreateModalPembagianKelas({
               </div>
             )}
 
-            {/* Tombol tutup modal */}
             <div className="pt-4 border-t">
               <Button
                 type="button"

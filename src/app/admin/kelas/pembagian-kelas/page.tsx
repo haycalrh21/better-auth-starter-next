@@ -3,45 +3,57 @@ import { TableColumn } from "../../students/_components/table-reusable-siswa";
 import AdminLayout from "../../layout/layout";
 
 import CreateModalPembagianKelas from "./_component/modalPembagianKelas";
-import { Guru, Kelas, Siswa } from "@/interface";
-import { DataTableKelas } from "./_component/table-reusable-kelas";
+import { GuruWithRelations, Siswa } from "@/interface";
+import { DataTable } from "./_component/table-reusable-kelas";
 
 export default async function Page() {
   const getDataSiswa = await prisma.siswa.findMany({
-    select: {
-      kelas: true,
+    where: {
+      kelas: {
+        none: { id: undefined },
+      },
     },
   });
-  const getDataGuru = await prisma.guru.findMany({
-    select: {
-      kelas: true,
+
+  const getDataGuruRandom = await prisma.guru.findMany({
+    where: {
+      kelas: {
+        none: { id: undefined },
+      },
     },
   });
+
   const getDataKelas = await prisma.kelas.findMany({
     include: {
       guru: {
         select: { namaLengkap: true },
       },
-      siswa: true, // ambil semua siswa
+      siswa: {
+        select: {
+          id: true,
+          namaLengkap: true,
+        },
+      },
       Jadwal: true, // ambil jadwal
       Pembayaran: true, // ambil pembayaran
     },
   });
 
-  const guruData = getDataGuru as Guru[];
-  console.log("Guru Data:", guruData);
+  const guruData = getDataGuruRandom as GuruWithRelations[];
+  // console.log("Guru Data:", guruData);
   // Type assertion to match our interface
   const siswaData = getDataSiswa as Siswa[];
 
-  type KelasTableType = Pick<
-    Kelas,
-    "id" | "namaKelas" | "guruId" | "tahunAjaran" | "semester" | "jurusan"
-  > & { guru: { namaLengkap: string } | null };
-
+  type KelasTableType = typeof getDataKelas extends (infer U)[] ? U : never;
   const columns: TableColumn<KelasTableType>[] = [
     { key: "namaKelas", label: "Nama Kelas", sortable: true, type: "text" },
-    { key: "guruId", label: "Guru ID", sortable: false, type: "text" },
-    { key: "guru", label: "Nama guru", sortable: false, type: "text" },
+
+    {
+      key: "guru.namaLengkap",
+      label: "Nama Guru",
+      sortable: false,
+      type: "text",
+    },
   ];
 
   return (
@@ -54,7 +66,7 @@ export default async function Page() {
         </div>
 
         {/* Data Table */}
-        <DataTableKelas
+        <DataTable
           data={getDataKelas}
           columns={columns}
           searchKey="namaKelas"

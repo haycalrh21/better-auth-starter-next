@@ -9,10 +9,20 @@ export default async function Page() {
     orderBy: {
       createdAt: "desc",
     },
+    include: {
+      kelas: {
+        select: {
+          id: true,
+          namaKelas: true,
+        },
+      },
+    },
   });
 
+  console.log("Data Guru:", getDataGuru);
+  type DataSiswaType = typeof getDataGuru extends (infer U)[] ? U : never;
   // Definisikan kolom yang ingin ditampilkan dengan type yang fleksibel
-  const columns: TableColumn<(typeof getDataGuru)[0]>[] = [
+  const columns: TableColumn<DataSiswaType>[] = [
     {
       key: "namaLengkap",
       label: "Nama Lengkap",
@@ -38,9 +48,9 @@ export default async function Page() {
       type: "text",
     },
     {
-      key: "alamatLengkap",
-      label: "Alamat",
-      sortable: false,
+      key: "kelas.namaKelas",
+      label: "kelas",
+      sortable: true,
       type: "truncate",
     },
   ];

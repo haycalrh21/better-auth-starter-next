@@ -14,8 +14,8 @@ export async function editSiswa(id: string, formData: FormData) {
       where: { id },
       data: {
         namaLengkap: data.namaLengkap,
-        nisn: data.nisn,
-        nik: data.nik,
+        nisn: data.nisn ? String(data.nisn) : null,
+        nik: data.nik ? String(data.nik) : null,
         tempatLahir: data.tempatLahir,
         tanggalLahir: data.tanggalLahir,
         jenisKelamin: data.jenisKelamin,
@@ -27,7 +27,7 @@ export async function editSiswa(id: string, formData: FormData) {
         kecamatan: data.kecamatan,
         kabupatenKota: data.kabupatenKota,
         provinsi: data.provinsi,
-        kodePos: data.kodePos,
+        kodePos: data.kodePos ? String(data.kodePos) : null,
 
         tahunMasuk: data.tahunMasuk,
         namaAyah: data.namaAyah,
