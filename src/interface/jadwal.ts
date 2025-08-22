@@ -1,44 +1,53 @@
-import { Hari } from "./enums";
-import { Kelas } from "./kelas";
-import { Guru } from "./guru";
-import { MataPelajaran } from "./mata-pelajaran";
-
 export interface Jadwal {
   id: string;
   createdAt: Date;
   updatedAt: Date;
-  hari: Hari;
+  hari: string; // SENIN, SELASA, RABU, KAMIS, JUMAT
   jamMulai: string;
   jamSelesai: string;
   kelasId: string;
-  kelas: Kelas;
+  kelas: {
+    id: string;
+    namaKelas: string;
+  };
   guruId: string;
-  guru: Guru;
-  mataPelajaranId?: string;
-  mataPelajaran?: MataPelajaran;
+  guru: {
+    id: string;
+    namaLengkap: string;
+  };
+  mataPelajaranId: string | null;
+  mataPelajaran?: {
+    id: string;
+    nama: string;
+  } | null;
 }
 
 export interface JadwalCreateInput {
-  id?: string;
-  hari: Hari;
+  hari: string;
   jamMulai: string;
   jamSelesai: string;
   kelasId: string;
   guruId: string;
-  mataPelajaranId?: string;
+  mataPelajaranId?: string | null;
 }
 
 export interface JadwalUpdateInput {
-  hari?: Hari;
+  hari?: string;
   jamMulai?: string;
   jamSelesai?: string;
   kelasId?: string;
   guruId?: string;
-  mataPelajaranId?: string;
+  mataPelajaranId?: string | null;
 }
 
-export interface JadwalWithRelations extends Jadwal {
-  kelas: Kelas;
-  guru: Guru;
-  mataPelajaran?: MataPelajaran;
+export interface GenerateScheduleInput {
+  kelasIds: string[];
+  startTime?: string; // default: "07:00"
+  endTime?: string; // default: "15:00"
+  breakTimes?: {
+    start: string;
+    end: string;
+    name: string;
+  }[];
+  lessonDuration?: number; // default: 45 minutes
 }

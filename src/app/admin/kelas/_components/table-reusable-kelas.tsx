@@ -21,6 +21,9 @@ import {
   Eye,
   Trash2,
   Pencil,
+  Users,
+  Power,
+  PowerOff,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,21 +53,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
-import {
-  KelasWithRelations,
-  SiswaBasic,
-  SiswaWithRelations,
-} from "@/interface";
-import { KelasDetailsDialog } from "./viewDataKelas";
-import { EditSiswaDialog } from "@/app/admin/students/_components/edit-data-siswa";
-import DeleteSiswaDialog from "@/app/admin/students/_components/delete-siswa";
+import { EditKelasDialog } from "./edit-data-kelas";
+import { DeleteKelasDialog } from "./delete-kelas";
+import { ViewKelasDialog } from "./viewDataKelas";
 
 export interface TableColumn<TData> {
-  key: keyof TData | string; // 🔥 fleksibel
+  key: keyof TData | string;
   label: string;
   sortable?: boolean;
-  type?: "text" | "email" | "date" | "boolean" | "number" | "truncate";
+  type?:
+    | "text"
+    | "email"
+    | "date"
+    | "boolean"
+    | "number"
+    | "truncate"
+    | "badge"
+    | "status";
 }
 
 interface DataTableProps<TData extends Record<string, unknown>> {
@@ -113,7 +120,7 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   const [viewModalOpen, setViewModalOpen] = React.useState(false);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
-  const [editModalDeleteOpen, setEditModalDeleteOpen] = React.useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState<TData | null>(null);
 
   const handleView = React.useCallback((item: TData) => {
@@ -128,23 +135,39 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   const handleDelete = React.useCallback((item: TData) => {
     setSelectedItem(item);
-    setEditModalDeleteOpen(true);
+    setDeleteModalOpen(true);
   }, []);
 
   const renderCellValue = React.useCallback((value: unknown, type?: string) => {
     if (value === null || value === undefined) return <div>-</div>;
+
     if (type === "boolean") return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
     if (type === "number") return <div>{Number(value).toLocaleString()}</div>;
     if (type === "date")
       return <div>{new Date(String(value)).toLocaleDateString("id-ID")}</div>;
     if (type === "email")
       return <div className="lowercase text-blue-600">{String(value)}</div>;
-    if (type === "truncate")
+    if (type === "truncate") {
       return (
         <div className="max-w-xs truncate" title={String(value)}>
           {String(value)}
         </div>
       );
+    }
+    if (type === "badge") {
+      const val = String(value);
+      const variant =
+        val === "SMP" ? "default" : val === "SMA" ? "secondary" : "outline";
+      return <Badge variant={variant as any}>{val}</Badge>;
+    }
+    if (type === "status") {
+      const isActive = Boolean(value);
+      return (
+        <Badge variant={isActive ? "default" : "destructive"}>
+          {isActive ? "Aktif" : "Tidak Aktif"}
+        </Badge>
+      );
+    }
 
     return <div>{String(value)}</div>;
   }, []);
@@ -220,6 +243,8 @@ export function DataTable<TData extends Record<string, unknown>>({
         enableSorting: false,
         cell: ({ row }) => {
           const item = row.original;
+          const isActive = (item as any).isActive;
+
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -238,6 +263,25 @@ export function DataTable<TData extends Record<string, unknown>>({
                 <DropdownMenuItem onClick={() => handleEdit(item)}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    // Handle status toggle
+                    console.log("Toggle status for:", item);
+                  }}
+                >
+                  {isActive ? (
+                    <>
+                      <PowerOff className="mr-2 h-4 w-4" />
+                      Deactivate
+                    </>
+                  ) : (
+                    <>
+                      <Power className="mr-2 h-4 w-4" />
+                      Activate
+                    </>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -404,7 +448,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                 table.setPageSize(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w>[70px]">
+              <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue
                   placeholder={table.getState().pagination.pageSize}
                 />
@@ -443,22 +487,22 @@ export function DataTable<TData extends Record<string, unknown>>({
         </div>
       </div>
 
-      <KelasDetailsDialog
+      <ViewKelasDialog
         open={viewModalOpen}
         onOpenChange={setViewModalOpen}
-        item={selectedItem as unknown as KelasWithRelations}
+        item={selectedItem as any}
       />
 
-      <EditSiswaDialog
+      <EditKelasDialog
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        item={selectedItem as unknown as SiswaWithRelations}
+        item={selectedItem as any}
       />
 
-      <DeleteSiswaDialog
-        open={editModalDeleteOpen}
-        onOpenChange={setEditModalDeleteOpen}
-        item={selectedItem as unknown as SiswaBasic}
+      <DeleteKelasDialog
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        item={selectedItem as any}
       />
     </div>
   );

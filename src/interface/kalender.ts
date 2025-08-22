@@ -2,17 +2,23 @@ export interface Kalender {
   id: string;
   createdAt: Date;
   updatedAt: Date;
-  tanggal: Date;
-  keterangan?: string;
+  tanggalMulai: Date;
+  tanggalSelesai: Date | null;
+  semester: string;
+  keterangan: string | null;
 }
 
 export interface KalenderCreateInput {
   id?: string;
-  tanggal: Date;
-  keterangan?: string;
+  tanggalMulai: Date;
+  tanggalSelesai?: Date | null;
+  semester: string;
+  keterangan?: string | null;
 }
 
 export interface KalenderUpdateInput {
-  tanggal?: Date;
-  keterangan?: string;
+  tanggalMulai?: Date;
+  tanggalSelesai?: Date | null;
+  semester?: string;
+  keterangan?: string | null;
 }

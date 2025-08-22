@@ -60,3 +60,18 @@ export enum Hari {
   JUMAT = "JUMAT",
   SABTU = "SABTU",
 }
+
+export enum StatusSiswa {
+  AKTIF = "AKTIF", // Currently enrolled and active
+  LULUS = "LULUS", // Graduated successfully
+  PINDAH = "PINDAH", // Transferred to another school
+  KELUAR = "KELUAR", // Dropped out
+  DIKELUARKAN = "DIKELUARKAN", // Expelled
+  CUTI = "CUTI", // On leave/hiatus
+}
+
+export enum Jenjang {
+  SMP = "SMP", // Sekolah Menengah Pertama (Junior High)
+  SMA = "SMA", // Sekolah Menengah Atas (Senior High)
+  SMK = "SMK", // Sekolah Menengah Kejuruan (Vocational High)
+}

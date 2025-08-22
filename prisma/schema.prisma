@@ -84,11 +84,13 @@ Jadwal          Jadwal[]     // satu guru bisa punya banyak jadwal
 }
 
 model Kalender {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tanggal   DateTime
-  keterangan String?
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tanggalMulai  DateTime
+  tanggalSelesai DateTime?
+  semester      String   @default("1")
+  keterangan    String?
 
   @@map("kalender")
 }
@@ -211,17 +213,32 @@ model Kelas {
   id          String   @id @default(uuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  namaKelas   String
-  tahunAjaran String
-  jurusan     String?
-  semester    String
+  
+  // Class Identity
+  namaKelas   String   // e.g., "7A", "8B", "10 IPA 1", "11 IPS 2", "12E"
+  
+  // Academic Period
+  tahunAjaran String   // Academic year: "2024/2025"
+  semester    String   // Current semester: "1" or "2"
+  
+  // Program and School Level
+  jenjang     Jenjang  // Education level: SMP or SMA
+  jurusan     String?  // Program: "IPA", "IPS", "Bahasa" (for SMA only)
+  
+  // Status
+  isActive    Boolean  @default(true) // Is this class currently active
+  
+  // Teacher Assignment
+  guru        Guru?    @relation(fields: [guruId], references: [id])
+  guruId      String?
 
-  guru        Guru     @relation(fields: [guruId], references: [id])
-  guruId      String
-
-  siswa       Siswa[]  @relation("KelasSiswa") // banyak siswa di kelas ini
-  Jadwal     Jadwal[]  // satu kelas bisa punya banyak jadwal
-  Pembayaran Pembayaran[] // satu kelas bisa punya banyak pembayaran
+  // Relations
+  siswa       Siswa[]  @relation("KelasSiswa") // Students in this class
+  Jadwal     Jadwal[]  // Class schedules
+  Pembayaran Pembayaran[] // Class-related payments
+  
+  // Ensure unique class per academic year
+  @@unique([namaKelas, tahunAjaran])
   @@map("kelas")
 }
 
@@ -229,6 +246,8 @@ model Siswa {
   id                String    @id @default(uuid())
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  
+  // Basic Information
   namaLengkap       String
   nisn              String?   @unique
   nik               String?   @unique
@@ -236,16 +255,27 @@ model Siswa {
   tanggalLahir      DateTime?
   jenisKelamin      Gender?
   agama             Agama?
+  
+  // Contact Information
   noHp              String?
   emailAlternatif   String?
   alamatLengkap     String?
   kelurahan         String?
-  statsuSiswa      String?
   kecamatan         String?
   kabupatenKota     String?
   provinsi          String?
   kodePos           String?
-  tahunMasuk        Int?
+  
+  // Academic Information
+  tahunMasuk        Int?      // Year first enrolled
+  
+  // Student Status and Graduation Tracking
+  status            StatusSiswa @default(AKTIF)
+  tahunLulus        Int?        // Year of graduation
+  tanggalLulus      DateTime?   // Exact graduation date
+  alasanKeluar      String?     // Reason for leaving (if not graduated)
+  
+  // Family Information
   namaAyah          String?
   namaIbu           String?
   namaWali          String?
@@ -253,12 +283,18 @@ model Siswa {
   pekerjaanIbu      String?
   pekerjaanWali     String?
   noHpOrtu          String?
+  
+  // System Fields
+  statsuSiswa      String?   // Legacy field, consider removing
   isProfileComplete Boolean   @default(false)
   userId            String    @unique
+  
+  // Relations
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   Beasiswa     Beasiswa[] // satu siswa bisa punya banyak beasiswa
-  kelas             Kelas[]   @relation("KelasSiswa") // relasi many-to-many
+  kelas             Kelas[]   @relation("KelasSiswa") // Class history (many-to-many)
   Pembayaran     Pembayaran[] // satu siswa bisa punya banyak pembayaran
+  
   @@map("siswa")
 }
 
@@ -333,6 +369,21 @@ enum StatusKawin {
   KAWIN
   CERAI_HIDUP
   CERAI_MATI
+}
+
+enum StatusSiswa {
+  AKTIF          // Currently enrolled and active
+  LULUS          // Graduated successfully
+  PINDAH         // Transferred to another school
+  KELUAR         // Dropped out
+  DIKELUARKAN    // Expelled
+  CUTI           // On leave/hiatus
+}
+
+enum Jenjang {
+  SMP            // Sekolah Menengah Pertama (Junior High)
+  SMA            // Sekolah Menengah Atas (Senior High)
+  SMK            // Sekolah Menengah Kejuruan (Vocational High)
 }
 
 

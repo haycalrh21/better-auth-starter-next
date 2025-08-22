@@ -1,25 +1,24 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  BookOpen,
-  Users,
-  Award,
-  AlertCircle,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, AlertCircle } from "lucide-react";
+import type { Kalender } from "@/interface/kalender";
 
 interface AcademicEvent {
-  id: number;
+  id: string;
   title: string;
   date: Date;
-  type: "semester" | "exam" | "holiday" | "academic" | "activity";
-  color: string;
+  endDate?: Date;
   description: string;
+  semester: string;
 }
 
-const AcademicCalendar = () => {
+interface AcademicCalendarProps {
+  kalenderData: Kalender[];
+}
+
+const AcademicCalendar: React.FC<AcademicCalendarProps> = ({
+  kalenderData,
+}) => {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(today);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -34,120 +33,28 @@ const AcademicCalendar = () => {
 
   const academicYear = getAcademicYear();
 
-  // Academic events data - dynamically set based on current academic year
-  const academicEvents: AcademicEvent[] = [
-    {
-      id: 1,
-      title: "Hari Pertama Sekolah",
-      date: new Date(academicYear, 7, 15), // August 15
-      type: "semester",
-      color: "bg-blue-500",
-      description: `Pembukaan tahun ajaran baru ${academicYear}/${
-        academicYear + 1
-      }`,
-    },
-    {
-      id: 2,
-      title: "Ujian Tengah Semester",
-      date: new Date(academicYear, 9, 15), // October 15
-      type: "exam",
-      color: "bg-red-500",
-      description: "UTS Semester Ganjil",
-    },
-    {
-      id: 3,
-      title: "Ujian Akhir Semester Ganjil",
-      date: new Date(academicYear, 11, 1), // December 1
-      type: "exam",
-      color: "bg-red-600",
-      description: "UAS Semester Ganjil",
-    },
-    {
-      id: 4,
-      title: "Penerimaan Rapor",
-      date: new Date(academicYear, 11, 20), // December 20
-      type: "academic",
-      color: "bg-purple-500",
-      description: "Pembagian rapor semester ganjil",
-    },
-    {
-      id: 5,
-      title: "Libur Semester",
-      date: new Date(academicYear, 11, 21), // December 21
-      type: "holiday",
-      color: "bg-green-500",
-      description: "Libur akhir semester ganjil",
-    },
-    {
-      id: 6,
-      title: "Mulai Semester Genap",
-      date: new Date(academicYear + 1, 0, 8), // January 8 next year
-      type: "semester",
-      color: "bg-blue-500",
-      description: "Pembukaan semester genap",
-    },
-    {
-      id: 7,
-      title: "Ujian Tengah Semester Genap",
-      date: new Date(academicYear + 1, 2, 15), // March 15 next year
-      type: "exam",
-      color: "bg-red-500",
-      description: "UTS Semester Genap",
-    },
-    {
-      id: 8,
-      title: "Prakerin SMK",
-      date: new Date(academicYear, 9, 1), // October 1
-      type: "activity",
-      color: "bg-orange-500",
-      description: "Mulai Praktek Kerja Industri",
-    },
-    {
-      id: 9,
-      title: "Festival Sains",
-      date: new Date(academicYear + 1, 3, 22), // April 22 next year
-      type: "activity",
-      color: "bg-orange-600",
-      description: "Festival Sains dan Teknologi Sekolah",
-    },
-    {
-      id: 10,
-      title: "Ujian Akhir Semester Genap",
-      date: new Date(academicYear + 1, 4, 15), // May 15 next year
-      type: "exam",
-      color: "bg-red-600",
-      description: "UAS Semester Genap",
-    },
-    {
-      id: 11,
-      title: "Kelulusan",
-      date: new Date(academicYear + 1, 5, 15), // June 15 next year
-      type: "academic",
-      color: "bg-purple-600",
-      description: "Pengumuman Kelulusan",
-    },
-    {
-      id: 12,
-      title: "Libur Kenaikan Kelas",
-      date: new Date(academicYear + 1, 5, 25), // June 25 next year
-      type: "holiday",
-      color: "bg-green-600",
-      description: "Libur akhir tahun ajaran",
-    },
-  ];
-
-  interface EventType {
-    icon: React.ComponentType<{ size: number }>;
-    label: string;
-  }
-
-  const eventTypes: Record<AcademicEvent["type"], EventType> = {
-    semester: { icon: Calendar, label: "Semester" },
-    exam: { icon: AlertCircle, label: "Ujian" },
-    holiday: { icon: Users, label: "Libur" },
-    academic: { icon: BookOpen, label: "Akademik" },
-    activity: { icon: Award, label: "Kegiatan" },
+  // Transform database Kalender to AcademicEvent format
+  const transformKalenderToEvents = (
+    kalenderList: Kalender[]
+  ): AcademicEvent[] => {
+    return kalenderList.map((kalender) => {
+      return {
+        id: kalender.id,
+        title: kalender.keterangan || `Kegiatan Semester ${kalender.semester}`,
+        date: new Date(kalender.tanggalMulai),
+        endDate: kalender.tanggalSelesai
+          ? new Date(kalender.tanggalSelesai)
+          : undefined,
+        description:
+          kalender.keterangan || `Kegiatan pada semester ${kalender.semester}`,
+        semester: kalender.semester,
+      };
+    });
   };
+
+  // Transform database events
+  const academicEvents: AcademicEvent[] =
+    transformKalenderToEvents(kalenderData);
 
   // Calendar helpers
   const monthNames = [
@@ -183,8 +90,32 @@ const AcademicCalendar = () => {
     );
   };
 
+  const isDateInRange = (date: Date, event: AcademicEvent): boolean => {
+    const eventStart = new Date(event.date);
+    const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
+
+    // Reset time to compare dates only
+    const checkDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const startDate = new Date(
+      eventStart.getFullYear(),
+      eventStart.getMonth(),
+      eventStart.getDate()
+    );
+    const endDate = new Date(
+      eventEnd.getFullYear(),
+      eventEnd.getMonth(),
+      eventEnd.getDate()
+    );
+
+    return checkDate >= startDate && checkDate <= endDate;
+  };
+
   const getEventsForDate = (date: Date): AcademicEvent[] => {
-    return academicEvents.filter((event) => isSameDay(event.date, date));
+    return academicEvents.filter((event) => isDateInRange(date, event));
   };
 
   const calendarDays = useMemo((): (Date | null)[] => {
@@ -223,29 +154,52 @@ const AcademicCalendar = () => {
   }
 
   const EventCard: React.FC<EventCardProps> = ({ event }) => {
-    const IconComponent = eventTypes[event.type]?.icon || Calendar;
+    const formatEventDate = (event: AcademicEvent): string => {
+      const startDate = event.date;
+      const endDate = event.endDate;
+
+      if (!endDate || isSameDay(startDate, endDate)) {
+        // Single day event
+        return `${startDate.getDate()} ${
+          monthNames[startDate.getMonth()]
+        } ${startDate.getFullYear()}`;
+      } else {
+        // Date range event
+        const startStr = `${startDate.getDate()} ${
+          monthNames[startDate.getMonth()]
+        }`;
+        const endStr = `${endDate.getDate()} ${
+          monthNames[endDate.getMonth()]
+        } ${endDate.getFullYear()}`;
+
+        if (startDate.getFullYear() === endDate.getFullYear()) {
+          if (startDate.getMonth() === endDate.getMonth()) {
+            // Same month: "15 - 20 Januari 2024"
+            return `${startDate.getDate()} - ${endDate.getDate()} ${
+              monthNames[endDate.getMonth()]
+            } ${endDate.getFullYear()}`;
+          } else {
+            // Different months, same year: "30 Januari - 5 Februari 2024"
+            return `${startStr} - ${endStr}`;
+          }
+        } else {
+          // Different years: "30 Desember 2023 - 5 Januari 2024"
+          return `${startStr} ${startDate.getFullYear()} - ${endStr}`;
+        }
+      }
+    };
 
     return (
-      <div
-        className="bg-white rounded-lg shadow-md p-4 border-l-4"
-        style={{ borderLeftColor: event.color.replace("bg-", "#") }}
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={`${event.color} p-2 rounded-lg text-white flex-shrink-0`}
-          >
-            <IconComponent size={16} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-800 text-sm">
-              {event.title}
-            </h4>
-            <p className="text-xs text-gray-600 mt-1">{event.description}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              {event.date.getDate()} {monthNames[event.date.getMonth()]}{" "}
-              {event.date.getFullYear()}
+      <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+        <div className="space-y-2">
+          <h4 className="font-semibold text-gray-800 text-sm">{event.title}</h4>
+
+          <p className="text-xs text-gray-500">{formatEventDate(event)}</p>
+          {event.semester && (
+            <p className="text-xs text-blue-600 font-medium">
+              Semester {event.semester}
             </p>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -263,6 +217,15 @@ const AcademicCalendar = () => {
             SMA Negeri 1 Jakarta - Tahun Ajaran {academicYear}/
             {academicYear + 1}
           </p>
+          <div className="mt-3 flex justify-center gap-4 text-sm text-gray-500">
+            <span>📅 {academicEvents.length} Event Terjadwal</span>
+            <span>
+              📚 Semester Aktif:{" "}
+              {academicEvents.length > 0
+                ? [...new Set(academicEvents.map((e) => e.semester))].join(", ")
+                : "Belum ada data"}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -344,7 +307,7 @@ const AcademicCalendar = () => {
                             {events.slice(0, 3).map((event, i) => (
                               <div
                                 key={`${event.id}-dot-${i}`}
-                                className={`w-1.5 h-1.5 rounded-full ${event.color}`}
+                                className="w-1.5 h-1.5 rounded-full bg-blue-500"
                               ></div>
                             ))}
                           </div>
@@ -360,37 +323,15 @@ const AcademicCalendar = () => {
 
         {/* Event Details */}
         <div className="space-y-6">
-          {/* Legend */}
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              Keterangan
-            </h3>
-            <div className="space-y-2">
-              {Object.entries(eventTypes).map(([type, info]) => {
-                const IconComponent = info.icon;
-                const sampleEvent = academicEvents.find((e) => e.type === type);
-                return (
-                  <div key={type} className="flex items-center gap-3">
-                    <div
-                      className={`${
-                        sampleEvent?.color || "bg-gray-500"
-                      } p-1.5 rounded text-white`}
-                    >
-                      <IconComponent size={14} />
-                    </div>
-                    <span className="text-sm text-gray-700">{info.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Selected Date Events */}
           {selectedDate && (
             <div className="bg-white rounded-lg shadow-md p-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                {selectedDate.getDate()} {monthNames[selectedDate.getMonth()]}{" "}
-                {selectedDate.getFullYear()}
+                {isSameDay(selectedDate, today)
+                  ? "Kegiatan hari ini"
+                  : `${selectedDate.getDate()} ${
+                      monthNames[selectedDate.getMonth()]
+                    } ${selectedDate.getFullYear()}`}
               </h3>
               <div className="space-y-3">
                 {getEventsForDate(selectedDate).length > 0 ? (
@@ -398,9 +339,17 @@ const AcademicCalendar = () => {
                     <EventCard key={event.id} event={event} />
                   ))
                 ) : (
-                  <p className="text-gray-500 text-sm">
-                    Tidak ada kegiatan pada tanggal ini
-                  </p>
+                  <div className="text-center py-4">
+                    <AlertCircle className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-gray-500 text-sm">
+                      Tidak ada kegiatan pada tanggal ini
+                    </p>
+                    {academicEvents.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Belum ada kegiatan terjadwal dalam kalender
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -412,13 +361,28 @@ const AcademicCalendar = () => {
               Kegiatan Mendatang
             </h3>
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {academicEvents
-                .filter((event) => event.date >= today)
-                .sort((a, b) => a.date.getTime() - b.date.getTime())
-                .slice(0, 5)
-                .map((event) => (
-                  <EventCard key={`upcoming-${event.id}`} event={event} />
-                ))}
+              {academicEvents.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                  <p className="text-gray-500 text-sm mb-2">
+                    Belum ada kegiatan akademik terjadwal
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Tambahkan kegiatan melalui menu Manajemen Kalender
+                  </p>
+                </div>
+              ) : (
+                academicEvents
+                  .filter((event) => {
+                    const eventEndDate = event.endDate || event.date;
+                    return eventEndDate >= today;
+                  })
+                  .sort((a, b) => a.date.getTime() - b.date.getTime())
+                  .slice(0, 5)
+                  .map((event) => (
+                    <EventCard key={`upcoming-${event.id}`} event={event} />
+                  ))
+              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { Gender, Agama } from "./enums";
+import { Gender, Agama, StatusSiswa, Jenjang } from "./enums";
 import { User } from "./user";
 import { Beasiswa } from "./beasiswa";
 import { Kelas } from "./kelas";
@@ -25,6 +25,15 @@ export interface Siswa {
   provinsi?: string;
   kodePos?: string;
   tahunMasuk?: number;
+  tingkatSaatIni?: number; // Current grade level (7-12)
+  jenjangSaatIni?: Jenjang; // Current education level
+
+  // Student Status and Graduation Tracking
+  status: StatusSiswa;
+  tahunLulus?: number; // Year of graduation
+  tanggalLulus?: Date; // Exact graduation date
+  alasanKeluar?: string; // Reason for leaving (if not graduated)
+
   namaAyah?: string;
   namaIbu?: string;
   namaWali?: string;

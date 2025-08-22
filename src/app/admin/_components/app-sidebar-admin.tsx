@@ -106,15 +106,15 @@ export default function AppSidebarAdmin({
         url: "/admin/academic-year",
         icon: Calendar,
         isActive: hasActiveChild("/admin/academic-year", [
-          "/admin/academic-year/settings",
+          "/admin/calender",
           "/admin/academic-year/calendar",
           "/admin/academic-year/holidays",
         ]),
         items: [
           {
-            title: "Pengaturan Tahun Ajaran",
-            url: "/admin/academic-year/settings",
-            isActive: isActive("/admin/academic-year/settings"),
+            title: "Pengaturan kalender akademik",
+            url: "/admin/calender",
+            isActive: isActive("/admin/calender"),
           },
           {
             title: "Kalender Akademik",
@@ -147,31 +147,6 @@ export default function AppSidebarAdmin({
             url: "/admin/teachers-staff",
             isActive: isActive("/admin/teachers-staff"),
           },
-          {
-            title: "NIP",
-            url: "/admin/teachers-staff/nip",
-            isActive: isActive("/admin/teachers-staff/nip"),
-          },
-          {
-            title: "NUPTK",
-            url: "/admin/teachers-staff/nuptk",
-            isActive: isActive("/admin/teachers-staff/nuptk"),
-          },
-          {
-            title: "Sertifikat Pendidik",
-            url: "/admin/teachers-staff/certificates",
-            isActive: isActive("/admin/teachers-staff/certificates"),
-          },
-          {
-            title: "Status Kepegawaian",
-            url: "/admin/teachers-staff/employment-status",
-            isActive: isActive("/admin/teachers-staff/employment-status"),
-          },
-          {
-            title: "Mata Pelajaran",
-            url: "/admin/teachers-staff/subjects",
-            isActive: isActive("/admin/teachers-staff/subjects"),
-          },
         ],
       },
       {
@@ -201,11 +176,6 @@ export default function AppSidebarAdmin({
             isActive: isActive("/admin/students/parents"),
           },
           {
-            title: "Riwayat Pendidikan",
-            url: "/admin/students/education-history",
-            isActive: isActive("/admin/students/education-history"),
-          },
-          {
             title: "Status Siswa",
             url: "/admin/students/status",
             isActive: isActive("/admin/students/status"),
@@ -218,55 +188,41 @@ export default function AppSidebarAdmin({
         title: "Kurikulum",
         url: "/admin/curriculum",
         icon: BookOpen,
-        isActive: hasActiveChild("/admin/curriculum", [
-          "/admin/curriculum/settings",
-          "/admin/curriculum/subjects-structure",
+        isActive: hasActiveChild("/admin/mata-pelajaran", [
+          "/admin/mata-pelajaran",
+          "/admin/kkm",
           "/admin/curriculum/competency-standards",
         ]),
         items: [
           {
-            title: "Pengaturan Kurikulum",
-            url: "/admin/curriculum/settings",
-            isActive: isActive("/admin/curriculum/settings"),
+            title: "Mata Pelajaran",
+            url: "/admin/mata-pelajaran",
+            isActive: isActive("/admin/mata-pelajaran"),
           },
           {
-            title: "Struktur Mata Pelajaran",
-            url: "/admin/curriculum/subjects-structure",
-            isActive: isActive("/admin/curriculum/subjects-structure"),
-          },
-          {
-            title: "Standar Kompetensi",
-            url: "/admin/curriculum/competency-standards",
-            isActive: isActive("/admin/curriculum/competency-standards"),
+            title: "KKM",
+            url: "/admin/kkm",
+            isActive: isActive("/admin/kkm"),
           },
         ],
       },
       {
         title: "Kelas & Jurusan",
-        url: "/admin/classes-majors",
+        url: "/admin/kelas",
         icon: Bot,
-        isActive: hasActiveChild("/admin/classes-majors", [
-          "/admin/classes-majors/class-division",
+        isActive: hasActiveChild("/admin/kelas", [
+          "/admin/kelas/p",
           "/admin/classes-majors/majors",
           "/admin/classes-majors/capacity",
           "/admin/classes-majors/homeroom-teacher",
         ]),
         items: [
           {
-            title: "Pembagian Kelas",
-            url: "/admin/kelas/pembagian-kelas",
-            isActive: isActive("/admin/kelas/pembagian-kelas"),
+            title: "Data Kelas",
+            url: "/admin/kelas",
+            isActive: isActive("/admin/kelas"),
           },
-          {
-            title: "Jurusan",
-            url: "/admin/classes-majors/majors",
-            isActive: isActive("/admin/classes-majors/majors"),
-          },
-          {
-            title: "Kapasitas Kelas",
-            url: "/admin/classes-majors/capacity",
-            isActive: isActive("/admin/classes-majors/capacity"),
-          },
+
           {
             title: "Wali Kelas",
             url: "/admin/classes-majors/homeroom-teacher",
@@ -276,28 +232,18 @@ export default function AppSidebarAdmin({
       },
       {
         title: "Jadwal Pelajaran",
-        url: "/admin/schedule",
+        url: "/admin/jadwal",
         icon: Calendar,
-        isActive: hasActiveChild("/admin/schedule", [
-          "/admin/schedule/master-schedule",
+        isActive: hasActiveChild("/admin/jadwal", [
+          "/admin/jadwal",
           "/admin/schedule/time-allocation",
           "/admin/schedule/lesson-hours",
         ]),
         items: [
           {
-            title: "Jadwal Master",
-            url: "/admin/schedule/master-schedule",
-            isActive: isActive("/admin/schedule/master-schedule"),
-          },
-          {
-            title: "Alokasi Waktu",
-            url: "/admin/schedule/time-allocation",
-            isActive: isActive("/admin/schedule/time-allocation"),
-          },
-          {
-            title: "Pengaturan Jam Pelajaran",
-            url: "/admin/schedule/lesson-hours",
-            isActive: isActive("/admin/schedule/lesson-hours"),
+            title: "Jadwal ",
+            url: "/admin/jadwal",
+            isActive: isActive("/admin/jadwal"),
           },
         ],
       },
