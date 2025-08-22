@@ -174,240 +174,270 @@ export default async function Page() {
 
     return (
       <AdminLayout>
-        <div className="grid auto-rows-min gap-6 md:grid-cols-1">
-          {/* Header Section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Manajemen Siswa
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Kelola data siswa, status, dan penempatan kelas
-              </p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline">{tahunAjaran}</Badge>
-                <Badge variant="secondary">{semesterLabel}</Badge>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+          <div className="space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col space-y-4 lg:flex-row lg:justify-between lg:items-start lg:space-y-0">
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  Manajemen Siswa
+                </h1>
+                <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+                  Kelola data siswa, status, dan penempatan kelas
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <Badge variant="outline" className="text-xs sm:text-sm">
+                    {tahunAjaran}
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs sm:text-sm">
+                    {semesterLabel}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 lg:flex-shrink-0">
+                <CreateAccountStudentsModal />
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <CreateAccountStudentsModal />
+
+            {/* Statistics Cards */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">
+                    Total Siswa Aktif
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl sm:text-2xl font-bold">
+                    {activeStudents.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    dari {dataSiswa.length} total siswa
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">
+                    Lulus Tahun Ini
+                  </CardTitle>
+                  <GraduationCap className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl sm:text-2xl font-bold">
+                    {graduatedThisYear.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    siswa telah lulus di {currentYear}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">
+                    Semester Ini
+                  </CardTitle>
+                  <BookOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl sm:text-2xl font-bold">
+                    {currentSemesterStudents.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    siswa terdaftar semester aktif
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs sm:text-sm font-medium leading-tight">
+                    Belum Ada Kelas
+                  </CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl sm:text-2xl font-bold text-amber-600">
+                    {studentsWithoutClass.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    siswa aktif belum ditempatkan
+                  </p>
+                </CardContent>
+              </Card>
             </div>
-          </div>
 
-          {/* Statistics Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Siswa Aktif
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {activeStudents.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  dari {dataSiswa.length} total siswa
-                </p>
-              </CardContent>
-            </Card>
+            {/* Additional Statistics */}
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">
+                    Distribusi Status Siswa
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Breakdown siswa berdasarkan status saat ini
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Object.entries(studentsByStatus).map(
+                      ([status, students]) => (
+                        <div
+                          key={status}
+                          className="flex justify-between items-center py-2"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {status === StatusSiswa.AKTIF && (
+                              <UserCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            )}
+                            {status === StatusSiswa.LULUS && (
+                              <GraduationCap className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                            )}
+                            {(status === StatusSiswa.KELUAR ||
+                              status === StatusSiswa.PINDAH ||
+                              status === StatusSiswa.DIKELUARKAN) && (
+                              <UserX className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            )}
+                            <span className="text-sm font-medium truncate">
+                              {status === StatusSiswa.AKTIF && "Aktif"}
+                              {status === StatusSiswa.LULUS && "Lulus"}
+                              {status === StatusSiswa.KELUAR && "Keluar"}
+                              {status === StatusSiswa.PINDAH && "Pindah"}
+                              {status === StatusSiswa.DIKELUARKAN &&
+                                "Dikeluarkan"}
+                            </span>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="ml-2 flex-shrink-0"
+                          >
+                            {students.length}
+                          </Badge>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Lulus Tahun Ini
-                </CardTitle>
-                <GraduationCap className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {graduatedThisYear.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  siswa telah lulus di {currentYear}
-                </p>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">
+                    Distribusi Jenjang
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Breakdown siswa berdasarkan jenjang pendidikan
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Object.entries(studentsByJenjang).map(
+                      ([jenjang, students]) => (
+                        <div
+                          key={jenjang}
+                          className="flex justify-between items-center py-2"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <BookOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                            <span className="text-sm font-medium truncate">
+                              {jenjang}
+                            </span>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="ml-2 flex-shrink-0"
+                          >
+                            {students.length}
+                          </Badge>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Semester Ini
-                </CardTitle>
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {currentSemesterStudents.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  siswa terdaftar semester aktif
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Belum Ada Kelas
-                </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-amber-600">
-                  {studentsWithoutClass.length}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  siswa aktif belum ditempatkan
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Additional Statistics */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  Distribusi Status Siswa
-                </CardTitle>
-                <CardDescription>
-                  Breakdown siswa berdasarkan status saat ini
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(studentsByStatus).map(
-                    ([status, students]) => (
-                      <div
-                        key={status}
-                        className="flex justify-between items-center"
-                      >
-                        <div className="flex items-center gap-2">
-                          {status === StatusSiswa.AKTIF && (
-                            <UserCheck className="h-4 w-4 text-green-500" />
-                          )}
-                          {status === StatusSiswa.LULUS && (
-                            <GraduationCap className="h-4 w-4 text-blue-500" />
-                          )}
-                          {(status === StatusSiswa.KELUAR ||
-                            status === StatusSiswa.PINDAH ||
-                            status === StatusSiswa.DIKELUARKAN) && (
-                            <UserX className="h-4 w-4 text-red-500" />
-                          )}
-                          <span className="text-sm">
-                            {status === StatusSiswa.AKTIF && "Aktif"}
-                            {status === StatusSiswa.LULUS && "Lulus"}
-                            {status === StatusSiswa.KELUAR && "Keluar"}
-                            {status === StatusSiswa.PINDAH && "Pindah"}
-                            {status === StatusSiswa.DIKELUARKAN &&
-                              "Dikeluarkan"}
+            {/* Quick Actions */}
+            {(unassignedStudents.length > 0 || availableUsers.length > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">
+                    Tindakan Cepat
+                  </CardTitle>
+                  <CardDescription className="text-sm">
+                    Aksi yang mungkin diperlukan berdasarkan data saat ini
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                    {unassignedStudents.length > 0 && (
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                          <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                          <span className="font-medium text-sm sm:text-base">
+                            Siswa Belum Ditempatkan
                           </span>
                         </div>
-                        <Badge variant="outline">{students.length}</Badge>
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-3 leading-relaxed">
+                          {unassignedStudents.length} siswa aktif belum memiliki
+                          kelas untuk tahun ajaran {tahunAjaran}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          Perlu penempatan kelas
+                        </Badge>
                       </div>
-                    )
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    )}
 
+                    {availableUsers.length > 0 && (
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                          <UserPlus className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                          <span className="font-medium text-sm sm:text-base">
+                            User Belum Punya Profil
+                          </span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-3 leading-relaxed">
+                          {availableUsers.length} user dengan role SISWA belum
+                          memiliki profil siswa
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          Dapat dibuat profil
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Data Table */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Distribusi Jenjang</CardTitle>
-                <CardDescription>
-                  Breakdown siswa berdasarkan jenjang pendidikan
+                <CardTitle className="text-base sm:text-lg">
+                  Daftar Siswa
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Kelola dan pantau data siswa secara menyeluruh
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(studentsByJenjang).map(
-                    ([jenjang, students]) => (
-                      <div
-                        key={jenjang}
-                        className="flex justify-between items-center"
-                      >
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 text-blue-500" />
-                          <span className="text-sm">{jenjang}</span>
-                        </div>
-                        <Badge variant="outline">{students.length}</Badge>
-                      </div>
-                    )
-                  )}
+              <CardContent className="px-2 sm:px-6">
+                <div className="overflow-x-auto">
+                  <DataTable
+                    data={dataSiswa}
+                    columns={columns}
+                    searchKey="namaLengkap"
+                    searchPlaceholder="Cari siswa berdasarkan nama..."
+                    showSelection={true}
+                    showColumnToggle={true}
+                    showActions={true}
+                  />
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {/* Quick Actions */}
-          {(unassignedStudents.length > 0 || availableUsers.length > 0) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Tindakan Cepat</CardTitle>
-                <CardDescription>
-                  Aksi yang mungkin diperlukan berdasarkan data saat ini
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {unassignedStudents.length > 0 && (
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
-                        <span className="font-medium">
-                          Siswa Belum Ditempatkan
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {unassignedStudents.length} siswa aktif belum memiliki
-                        kelas untuk tahun ajaran {tahunAjaran}
-                      </p>
-                      <Badge variant="outline">Perlu penempatan kelas</Badge>
-                    </div>
-                  )}
-
-                  {availableUsers.length > 0 && (
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <UserPlus className="h-4 w-4 text-blue-500" />
-                        <span className="font-medium">
-                          User Belum Punya Profil
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {availableUsers.length} user dengan role SISWA belum
-                        memiliki profil siswa
-                      </p>
-                      <Badge variant="outline">Dapat dibuat profil</Badge>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Data Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Daftar Siswa</CardTitle>
-              <CardDescription>
-                Kelola dan pantau data siswa secara menyeluruh
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                data={dataSiswa}
-                columns={columns}
-                searchKey="namaLengkap"
-                searchPlaceholder="Cari siswa berdasarkan nama..."
-                showSelection={true}
-                showColumnToggle={true}
-                showActions={true}
-              />
-            </CardContent>
-          </Card>
         </div>
       </AdminLayout>
     );
@@ -416,25 +446,29 @@ export default async function Page() {
 
     return (
       <AdminLayout>
-        <div className="grid auto-rows-min gap-4 md:grid-cols-1">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Manajemen Siswa</h1>
-          </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h1 className="text-2xl sm:text-3xl font-bold">
+                Manajemen Siswa
+              </h1>
+            </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <AlertTriangle className="h-12 w-12 mx-auto text-red-500 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  Gagal Memuat Data
-                </h3>
-                <p className="text-muted-foreground">
-                  Terjadi kesalahan saat memuat data siswa. Silakan refresh
-                  halaman atau hubungi administrator.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardContent className="p-4 sm:p-6">
+                <div className="text-center">
+                  <AlertTriangle className="h-8 sm:h-12 w-8 sm:w-12 mx-auto text-red-500 mb-4" />
+                  <h3 className="text-base sm:text-lg font-semibold mb-2">
+                    Gagal Memuat Data
+                  </h3>
+                  <p className="text-muted-foreground text-sm sm:text-base">
+                    Terjadi kesalahan saat memuat data siswa. Silakan refresh
+                    halaman atau hubungi administrator.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </AdminLayout>
     );
