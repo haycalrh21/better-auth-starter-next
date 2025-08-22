@@ -1,19 +1,27 @@
 "use client";
 
-import * as React from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -28,13 +36,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
 import { editSiswa } from "../actions/editSiswa";
-import { SiswaFormValues, siswaSchema } from "../schema/editSiswaSchema";
-import { objectToFormData } from "@/utils/objectToFormData";
+import { editSiswaSchema, type EditSiswaInput } from "../schema";
 import { Agama, Gender, SiswaWithRelations } from "@/interface";
 
 interface EditSiswaDialogProps {
@@ -48,532 +55,572 @@ export function EditSiswaDialog({
   onOpenChange,
   item,
 }: EditSiswaDialogProps) {
-  const [isSaving, setIsSaving] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<SiswaFormValues>({
-    resolver: zodResolver(siswaSchema),
+  const form = useForm<EditSiswaInput>({
+    resolver: zodResolver(editSiswaSchema),
+    defaultValues: {
+      id: "",
+      namaLengkap: "",
+      nisn: "",
+      nik: "",
+      tempatLahir: "",
+      tanggalLahir: undefined,
+      jenisKelamin: undefined,
+      agama: undefined,
+      noHp: "",
+      emailAlternatif: "",
+      alamatLengkap: "",
+      kelurahan: "",
+      kecamatan: "",
+      kabupatenKota: "",
+      provinsi: "",
+      kodePos: "",
+      tahunMasuk: undefined,
+      namaAyah: "",
+      namaIbu: "",
+      namaWali: "",
+      pekerjaanAyah: "",
+      pekerjaanIbu: "",
+      pekerjaanWali: "",
+      noHpOrtu: "",
+    },
   });
 
-  const watchedForm = watch();
-  // console.log(item?.tanggalLahir, "tanggalLahir");
-
-  React.useEffect(() => {
-    if (open && item) {
-      reset({
+  // Reset form when item changes
+  useEffect(() => {
+    if (item) {
+      form.reset({
+        id: item.id,
         namaLengkap: item.namaLengkap,
-        nisn: item.nisn ?? "",
-        nik: item.nik ?? "",
-        tempatLahir: item.tempatLahir ?? "",
-        noHp: item.noHp ?? "",
-        emailAlternatif: item.emailAlternatif ?? "",
-        alamatLengkap: item.alamatLengkap ?? "",
-        kelurahan: item.kelurahan ?? "",
-        kecamatan: item.kecamatan ?? "",
-        kabupatenKota: item.kabupatenKota ?? "",
-        provinsi: item.provinsi ?? "",
-        kodePos: item.kodePos ?? "",
-        kelas: item.kelas?.[0]?.namaKelas ?? "",
-
-        namaAyah: item.namaAyah ?? "",
-        namaIbu: item.namaIbu ?? "",
-        namaWali: item.namaWali ?? "",
-        pekerjaanAyah: item.pekerjaanAyah ?? "",
-        pekerjaanIbu: item.pekerjaanIbu ?? "",
-        pekerjaanWali: item.pekerjaanWali ?? "",
-        noHpOrtu: item.noHpOrtu ?? "",
-
+        nisn: item.nisn || "",
+        nik: item.nik || "",
+        tempatLahir: item.tempatLahir || "",
         tanggalLahir: item.tanggalLahir
           ? new Date(item.tanggalLahir)
           : undefined,
-        tahunMasuk: item.tahunMasuk ?? undefined,
-
-        jenisKelamin: item.jenisKelamin ?? undefined,
-        agama: item.agama ?? undefined,
+        jenisKelamin: item.jenisKelamin || undefined,
+        agama: item.agama || undefined,
+        noHp: item.noHp || "",
+        emailAlternatif: item.emailAlternatif || "",
+        alamatLengkap: item.alamatLengkap || "",
+        kelurahan: item.kelurahan || "",
+        kecamatan: item.kecamatan || "",
+        kabupatenKota: item.kabupatenKota || "",
+        provinsi: item.provinsi || "",
+        kodePos: item.kodePos || "",
+        tahunMasuk: item.tahunMasuk || undefined,
+        namaAyah: item.namaAyah || "",
+        namaIbu: item.namaIbu || "",
+        namaWali: item.namaWali || "",
+        pekerjaanAyah: item.pekerjaanAyah || "",
+        pekerjaanIbu: item.pekerjaanIbu || "",
+        pekerjaanWali: item.pekerjaanWali || "",
+        noHpOrtu: item.noHpOrtu || "",
       });
     }
-  }, [open, item, reset]);
+  }, [item, form]);
 
-  const onSubmit: SubmitHandler<SiswaFormValues> = async (data) => {
+  async function onSubmit(data: EditSiswaInput) {
     if (!item) return;
 
-    setIsSaving(true);
+    setIsLoading(true);
     try {
-      const formData = objectToFormData(data);
-      const result = await editSiswa(item.id, formData);
-      if (result.success) {
-        console.log(result, "formData");
-        onOpenChange(false);
-      } else {
-        console.error(result.error);
-      }
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (value instanceof Date) {
+            formData.append(key, value.toISOString());
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+
+      await editSiswa(formData);
+      toast.success("Data siswa berhasil diupdate");
+      onOpenChange(false);
+      form.reset();
     } catch (error) {
-      console.error("Gagal menyimpan data:", error);
+      console.error("Edit siswa error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Gagal mengupdate data siswa"
+      );
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
+  }
+
+  const handleCancel = () => {
+    form.reset();
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Data Siswa</DialogTitle>
           <DialogDescription>
-            Ubah informasi siswa di sini. Klik simpan saat selesai.
+            Ubah informasi siswa {item?.namaLengkap}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
-          {/* Nama Lengkap */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="namaLengkap" className="text-right">
-              Nama Lengkap
-            </Label>
-            <div className="col-span-3">
-              <Input id="namaLengkap" {...register("namaLengkap")} />
-              {errors.namaLengkap && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.namaLengkap.message}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* NISN */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nisn" className="text-right">
-              NISN
-            </Label>
-            <div className="col-span-3">
-              <Input id="nisn" {...register("nisn")} />
-              {errors.nisn && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.nisn.message}
-                </p>
-              )}
-            </div>
-          </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Informasi Dasar</h3>
 
-          {/* NIK */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="nik" className="text-right">
-              NIK
-            </Label>
-            <div className="col-span-3">
-              <Input id="nik" {...register("nik")} />
-              {errors.nik && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.nik.message}
-                </p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="namaLengkap"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Lengkap</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nama lengkap siswa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          {/* Tempat Lahir */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tempatLahir" className="text-right">
-              Tempat Lahir
-            </Label>
-            <div className="col-span-3">
-              <Input id="tempatLahir" {...register("tempatLahir")} />
-              {errors.tempatLahir && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.tempatLahir.message}
-                </p>
-              )}
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="nisn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NISN</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nomor Induk Siswa Nasional"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          {/* Tanggal Lahir */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tanggalLahir" className="text-right">
-              Tanggal Lahir
-            </Label>
-            <div className="col-span-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !watchedForm.tanggalLahir && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {watchedForm.tanggalLahir ? (
-                      format(watchedForm.tanggalLahir, "PPP", { locale: id })
-                    ) : (
-                      <span>Pilih Tanggal</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={watchedForm.tanggalLahir}
-                    disabled={(date) =>
-                      date < new Date("1945-01-01") ||
-                      date > new Date("2005-12-31")
-                    }
-                    captionLayout="dropdown"
-                    onSelect={(date) => {
-                      if (date) {
-                        setValue("tanggalLahir", date);
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.tanggalLahir && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.tanggalLahir.message}
-                </p>
-              )}
-            </div>
-          </div>
-          {/* Jenis Kelamin */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="jenisKelamin" className="text-right">
-              Jenis Kelamin
-            </Label>
-            <div className="col-span-3">
-              <Select
-                value={watchedForm.jenisKelamin}
-                onValueChange={(value) =>
-                  setValue("jenisKelamin", value as Gender)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Jenis Kelamin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LAKI_LAKI">Laki-laki</SelectItem>
-                  <SelectItem value="PEREMPUAN">Perempuan</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.jenisKelamin && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.jenisKelamin.message}
-                </p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="nik"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NIK</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Nomor Induk Kependudukan"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          {/* Agama */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="agama" className="text-right">
-              Agama
-            </Label>
-            <div className="col-span-3">
-              <Select
-                value={watchedForm.agama}
-                onValueChange={(value) => setValue("agama", value as Agama)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Agama" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ISLAM">Islam</SelectItem>
-                  <SelectItem value="KRISTEN">Kristen</SelectItem>
-                  <SelectItem value="KATOLIK">Katolik</SelectItem>
-                  <SelectItem value="HINDU">Hindu</SelectItem>
-                  <SelectItem value="BUDDHA">Buddha</SelectItem>
-                  <SelectItem value="KONGHUCU">Konghucu</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.agama && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.agama.message}
-                </p>
-              )}
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="tempatLahir"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tempat Lahir</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tempat lahir" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          {/* No. HP */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="noHp" className="text-right">
-              No. HP
-            </Label>
-            <div className="col-span-3">
-              <Input id="noHp" {...register("noHp")} />
-              {errors.noHp && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.noHp.message}
-                </p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="tanggalLahir"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tanggal Lahir</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: id })
+                              ) : (
+                                <span>Pilih Tanggal</span>
+                              )}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date < new Date("1945-01-01") ||
+                              date > new Date("2010-12-31")
+                            }
+                            captionLayout="dropdown"
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          {/* Email Alternatif */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="emailAlternatif" className="text-right">
-              Email
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="emailAlternatif"
-                type="email"
-                {...register("emailAlternatif")}
-                disabled
+                <FormField
+                  control={form.control}
+                  name="tahunMasuk"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tahun Masuk</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1950}
+                          max={new Date().getFullYear() + 1}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || undefined)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="jenisKelamin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jenis Kelamin</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih jenis kelamin" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="LAKI_LAKI">Laki-laki</SelectItem>
+                          <SelectItem value="PEREMPUAN">Perempuan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="agama"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Agama</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih agama" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ISLAM">Islam</SelectItem>
+                          <SelectItem value="KRISTEN">Kristen</SelectItem>
+                          <SelectItem value="KATOLIK">Katolik</SelectItem>
+                          <SelectItem value="HINDU">Hindu</SelectItem>
+                          <SelectItem value="BUDDHA">Buddha</SelectItem>
+                          <SelectItem value="KONGHUCU">Konghucu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Informasi Kontak</h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="noHp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>No. HP</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nomor HP siswa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="emailAlternatif"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Email alternatif"
+                          {...field}
+                          disabled
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Address Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Informasi Alamat</h3>
+
+              <FormField
+                control={form.control}
+                name="alamatLengkap"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Alamat Lengkap</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Alamat lengkap" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.emailAlternatif && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.emailAlternatif.message}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* Alamat Lengkap */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="alamatLengkap" className="text-right">
-              Alamat Lengkap
-            </Label>
-            <div className="col-span-3">
-              <Input id="alamatLengkap" {...register("alamatLengkap")} />
-              {errors.alamatLengkap && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.alamatLengkap.message}
-                </p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="kelurahan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kelurahan</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Kelurahan" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          {/* Kelurahan */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="kelurahan" className="text-right">
-              Kelurahan
-            </Label>
-            <div className="col-span-3">
-              <Input id="kelurahan" {...register("kelurahan")} />
-              {errors.kelurahan && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.kelurahan.message}
-                </p>
-              )}
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="kecamatan"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kecamatan</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Kecamatan" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          {/* Kecamatan */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="kecamatan" className="text-right">
-              Kecamatan
-            </Label>
-            <div className="col-span-3">
-              <Input id="kecamatan" {...register("kecamatan")} />
-              {errors.kecamatan && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.kecamatan.message}
-                </p>
-              )}
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="kabupatenKota"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kabupaten/Kota</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Kabupaten/Kota" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          {/* Kabupaten/Kota */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="kabupatenKota" className="text-right">
-              Kabupaten/Kota
-            </Label>
-            <div className="col-span-3">
-              <Input id="kabupatenKota" {...register("kabupatenKota")} />
-              {errors.kabupatenKota && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.kabupatenKota.message}
-                </p>
-              )}
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="provinsi"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provinsi</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Provinsi" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          {/* Provinsi */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="provinsi" className="text-right">
-              Provinsi
-            </Label>
-            <div className="col-span-3">
-              <Input id="provinsi" {...register("provinsi")} />
-              {errors.provinsi && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.provinsi.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Kode Pos */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="kodePos" className="text-right">
-              Kode Pos
-            </Label>
-            <div className="col-span-3">
-              <Input id="kodePos" {...register("kodePos")} />
-              {errors.kodePos && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.kodePos.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Kelas */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="kelas" className="text-right">
-              Kelas
-            </Label>
-            <div className="col-span-3">
-              <Input id="kelas" {...register("kelas")} disabled />
-              {errors.kelas && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.kelas.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Tahun Masuk */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="tahunMasuk" className="text-right">
-              Tahun Masuk
-            </Label>
-            <div className="col-span-3">
-              <Input
-                id="tahunMasuk"
-                type="number"
-                {...register("tahunMasuk", { valueAsNumber: true })}
+              <FormField
+                control={form.control}
+                name="kodePos"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kode Pos</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Kode pos (5 digit)" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.tahunMasuk && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.tahunMasuk.message}
-                </p>
-              )}
             </div>
-          </div>
 
-          {/* Nama Ayah */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="namaAyah" className="text-right">
-              Nama Ayah
-            </Label>
-            <div className="col-span-3">
-              <Input id="namaAyah" {...register("namaAyah")} />
-              {errors.namaAyah && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.namaAyah.message}
-                </p>
-              )}
+            {/* Parent/Guardian Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Informasi Orang Tua/Wali</h3>
+
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="namaAyah"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Ayah</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nama ayah" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="namaIbu"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Ibu</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nama ibu" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="namaWali"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Wali</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nama wali (opsional)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="pekerjaanAyah"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pekerjaan Ayah</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Pekerjaan ayah" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="pekerjaanIbu"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pekerjaan Ibu</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Pekerjaan ibu" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="pekerjaanWali"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pekerjaan Wali</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Pekerjaan wali (opsional)"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="noHpOrtu"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>No. HP Orang Tua/Wali</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nomor HP orang tua/wali" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
 
-          {/* Nama Ibu */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="namaIbu" className="text-right">
-              Nama Ibu
-            </Label>
-            <div className="col-span-3">
-              <Input id="namaIbu" {...register("namaIbu")} />
-              {errors.namaIbu && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.namaIbu.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Nama Wali */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="namaWali" className="text-right">
-              Nama Wali
-            </Label>
-            <div className="col-span-3">
-              <Input id="namaWali" {...register("namaWali")} />
-              {errors.namaWali && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.namaWali.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Pekerjaan Ayah */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pekerjaanAyah" className="text-right">
-              Pekerjaan Ayah
-            </Label>
-            <div className="col-span-3">
-              <Input id="pekerjaanAyah" {...register("pekerjaanAyah")} />
-              {errors.pekerjaanAyah && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.pekerjaanAyah.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Pekerjaan Ibu */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pekerjaanIbu" className="text-right">
-              Pekerjaan Ibu
-            </Label>
-            <div className="col-span-3">
-              <Input id="pekerjaanIbu" {...register("pekerjaanIbu")} />
-              {errors.pekerjaanIbu && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.pekerjaanIbu.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Pekerjaan Wali */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pekerjaanWali" className="text-right">
-              Pekerjaan Wali
-            </Label>
-            <div className="col-span-3">
-              <Input id="pekerjaanWali" {...register("pekerjaanWali")} />
-              {errors.pekerjaanWali && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.pekerjaanWali.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* No. HP Orang Tua/Wali */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="noHpOrtu" className="text-right">
-              No. HP Ortu/Wali
-            </Label>
-            <div className="col-span-3">
-              <Input id="noHpOrtu" {...register("noHpOrtu")} />
-              {errors.noHpOrtu && (
-                <p className="mt-1 text-sm text-red-500">
-                  {errors.noHpOrtu.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              onClick={() => onOpenChange(false)}
-              variant="outline"
-              type="button"
-            >
-              Batal
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Simpan Perubahan
-            </Button>
-          </DialogFooter>
-        </form>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isLoading}
+              >
+                Batal
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

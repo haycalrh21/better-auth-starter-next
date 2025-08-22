@@ -3,7 +3,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogDescription,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
 
 import {
   UserCreateInput,
@@ -23,21 +32,10 @@ import {
 import { objectToFormData } from "@/utils/objectToFormData";
 import { createGuru } from "@/app/admin/teachers-staff/actions/create-guru";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
 export default function CreateAccountStudentsModal() {
-  const openRef = useRef(false);
-  const [open, setOpen] = useState(openRef.current);
+  const [open, setOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleOpenChange = (val: boolean) => {
-    openRef.current = val; // simpan di ref supaya ga ilang pas HMR
-    setOpen(val);
-  };
   const {
     register,
     handleSubmit,
@@ -54,83 +52,125 @@ export default function CreateAccountStudentsModal() {
       const formData = objectToFormData(data);
       await createGuru(formData);
 
-      toast.success("Registration complete. You're all set.");
+      toast.success("Akun siswa berhasil dibuat");
       reset();
-      handleOpenChange(false); // nutup modal
+      setOpen(false);
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message);
       } else {
-        toast.error("Registration failed");
+        toast.error("Gagal membuat akun");
       }
     }
   }
 
+  const handleCancel = () => {
+    reset();
+    setOpen(false);
+  };
+
   return (
-    <div>
-      <Button variant="outline" onClick={() => handleOpenChange(true)}>
-        Create Account
+    <>
+      <Button
+        variant="default"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2"
+      >
+        <UserPlus className="h-4 w-4" />
+        Buat Akun Siswa
       </Button>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Create New Account</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Buat Akun Siswa Baru
+            </DialogTitle>
             <DialogDescription>
-              Fill the form to create new user
+              Isi form di bawah untuk membuat akun siswa baru
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Name */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Name Field */}
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" className="text-sm font-medium">
+                Nama Lengkap
+              </Label>
               <Input
                 id="name"
                 {...register("name")}
                 disabled={isSubmitting}
-                placeholder="Enter full name"
+                placeholder="Masukkan nama lengkap siswa"
+                className="h-11"
               />
               {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
-            {/* Email */}
+            {/* Email Field */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 {...register("email")}
                 disabled={isSubmitting}
-                placeholder="Enter email address"
+                placeholder="contoh@email.com"
+                className="h-11"
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
-            {/* Password */}
+            {/* Password Field */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                {...register("password")}
-                disabled={isSubmitting}
-                placeholder="Enter password"
-              />
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  {...register("password")}
+                  disabled={isSubmitting}
+                  placeholder="Masukkan password (minimal 6 karakter)"
+                  className="h-11 pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-11 px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
               {errors.password && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive flex items-center gap-1">
                   {errors.password.message}
                 </p>
               )}
             </div>
 
-            {/* Role */}
+            {/* Role Field */}
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label className="text-sm font-medium">Role</Label>
               <Controller
                 name="role"
                 control={control}
@@ -140,38 +180,53 @@ export default function CreateAccountStudentsModal() {
                     onValueChange={field.onChange}
                     disabled={isSubmitting}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select role" />
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Pilih role pengguna" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SISWA">SISWA</SelectItem>
+                      <SelectItem value="SISWA">Siswa</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
               {errors.role && (
-                <p className="text-sm text-red-500">{errors.role.message}</p>
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  {errors.role.message}
+                </p>
               )}
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-4">
+            <DialogFooter className="gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 disabled={isSubmitting}
+                onClick={handleCancel}
                 className="flex-1"
-                onClick={() => handleOpenChange(false)}
               >
-                Cancel
+                Batal
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1">
-                {isSubmitting ? "Creating..." : "Create Account"}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                    Membuat...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" />
+                    Buat Akun
+                  </>
+                )}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

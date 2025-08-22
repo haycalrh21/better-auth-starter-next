@@ -100,8 +100,8 @@ export default function CreateKelasModal({
   const hasTeachers = availableTeachers.length > 0;
   const hasStudents = unassignedStudents.length > 0;
 
-  // Scenario validation logic
-  const canCreateNew = hasTeachers && hasStudents;
+  // Scenario validation logic - only require teachers for new class creation
+  const canCreateNew = hasTeachers; // Allow creation as long as there are teachers
   const onlyTeachers = hasTeachers && !hasStudents;
   const onlyStudents = !hasTeachers && hasStudents;
   const noResources = !hasTeachers && !hasStudents;
@@ -142,14 +142,11 @@ export default function CreateKelasModal({
   const watchGrade = randomForm.watch("grade");
   const watchNumberOfClasses = randomForm.watch("numberOfClasses");
 
-  // Calculate optimal classes based on students and teachers
-  const maxPossibleClasses = Math.min(
-    availableTeachers.length,
-    Math.ceil(unassignedStudents.length / 20) // Minimum 20 students per class
-  );
+  // Calculate maximum classes based only on available teachers
+  const maxPossibleClasses = availableTeachers.length;
 
   const recommendedClasses = Math.min(
-    Math.ceil(unassignedStudents.length / 100), // Optimal 30 students per class
+    Math.ceil(unassignedStudents.length / 30), // Optimal 30 students per class
     availableTeachers.length
   );
 
@@ -180,9 +177,9 @@ export default function CreateKelasModal({
   };
 
   const onSubmitRandom = (data: any) => {
-    if (data.numberOfClasses > maxPossibleClasses) {
+    if (data.numberOfClasses > availableTeachers.length) {
       toast.error(
-        `Maksimal ${maxPossibleClasses} kelas dapat dibuat dengan sumber daya yang tersedia`
+        `Maksimal ${availableTeachers.length} kelas dapat dibuat berdasarkan jumlah guru yang tersedia`
       );
       return;
     }
@@ -265,14 +262,14 @@ export default function CreateKelasModal({
             Gunakan Existing ({unassignedStudents.length} siswa)
           </Button>
         ) : onlyTeachers ? (
-          <Button disabled className="flex items-center gap-2">
+          <Button className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Tunggu Siswa Dulu
+            Buat Kelas ({availableTeachers.length} guru)
           </Button>
         ) : noResources ? (
           <Button disabled className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Tidak Ada Resource
+            Tidak Ada Guru
           </Button>
         ) : (
           <Button className="flex items-center gap-2">
@@ -468,7 +465,7 @@ export default function CreateKelasModal({
                       {maxPossibleClasses}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Maksimal Kelas
+                      Maks Kelas (Guru)
                     </div>
                   </div>
                   <div className="text-center">
@@ -476,7 +473,7 @@ export default function CreateKelasModal({
                       {recommendedClasses}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Rekomendasi
+                      Rekomendasi (30/kelas)
                     </div>
                   </div>
                 </div>
@@ -721,7 +718,8 @@ export default function CreateKelasModal({
                             />
                           </FormControl>
                           <FormDescription>
-                            Maksimal {maxPossibleClasses} kelas. Rekomendasi:{" "}
+                            Maksimal {maxPossibleClasses} kelas berdasarkan
+                            jumlah guru tersedia. Rekomendasi:{" "}
                             {recommendedClasses}
                           </FormDescription>
                           <FormMessage />
@@ -988,7 +986,8 @@ export default function CreateKelasModal({
                   <Button
                     type="submit"
                     disabled={
-                      isPending || watchNumberOfClasses > maxPossibleClasses
+                      isPending ||
+                      watchNumberOfClasses > availableTeachers.length
                     }
                     className="w-full"
                   >

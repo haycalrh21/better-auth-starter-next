@@ -102,15 +102,6 @@ export const createSiswaSchema = z
       )
       .optional(),
 
-    tingkatSaatIni: z
-      .number({ message: "Tingkat saat ini harus berupa angka" })
-      .int("Tingkat saat ini harus bilangan bulat")
-      .min(7, "Tingkat minimal 7")
-      .max(12, "Tingkat maksimal 12")
-      .optional(),
-
-    jenjangSaatIni: z.nativeEnum(Jenjang).optional(),
-
     status: z.nativeEnum(StatusSiswa).default(StatusSiswa.AKTIF),
 
     tahunLulus: z
@@ -156,30 +147,6 @@ export const createSiswaSchema = z
       .string({ message: "User ID wajib ada" })
       .uuid("User ID tidak valid"),
   })
-  .refine(
-    (data) => {
-      // Validate jenjang and tingkat compatibility
-      if (data.jenjangSaatIni && data.tingkatSaatIni) {
-        if (
-          data.jenjangSaatIni === Jenjang.SMP &&
-          (data.tingkatSaatIni < 7 || data.tingkatSaatIni > 9)
-        ) {
-          return false;
-        }
-        if (
-          data.jenjangSaatIni === Jenjang.SMA &&
-          (data.tingkatSaatIni < 10 || data.tingkatSaatIni > 12)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    },
-    {
-      message: "Tingkat tidak sesuai dengan jenjang. SMP: 7-9, SMA: 10-12",
-      path: ["tingkatSaatIni"],
-    }
-  )
   .refine(
     (data) => {
       // If student is graduated, graduation date and year should be provided

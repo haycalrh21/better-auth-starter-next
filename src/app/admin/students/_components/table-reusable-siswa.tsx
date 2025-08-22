@@ -21,6 +21,9 @@ import {
   Eye,
   Trash2,
   Pencil,
+  User,
+  GraduationCap,
+  Phone,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,18 +53,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 import { EditSiswaDialog } from "./edit-data-siswa";
-
 import DeleteSiswaDialog from "./delete-siswa";
-import { SiswaBasic, SiswaWithRelations } from "@/interface";
-import { SiswaDetailsDialog } from "./viewDataSsiswa";
+import { ViewSiswaDialog } from "./viewDataSiswa";
+import { SiswaWithRelations, StatusSiswa } from "@/interface";
 
 export interface TableColumn<TData> {
-  key: keyof TData | string; // 🔥 fleksibel
+  key: keyof TData | string;
   label: string;
   sortable?: boolean;
-  type?: "text" | "email" | "date" | "boolean" | "number" | "truncate";
+  type?:
+    | "text"
+    | "email"
+    | "date"
+    | "boolean"
+    | "number"
+    | "truncate"
+    | "badge"
+    | "status"
+    | "kelas"
+    | "phone";
 }
 
 interface DataTableProps<TData extends Record<string, unknown>> {
@@ -110,7 +123,7 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   const [viewModalOpen, setViewModalOpen] = React.useState(false);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
-  const [editModalDeleteOpen, setEditModalDeleteOpen] = React.useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState<TData | null>(null);
 
   const handleView = React.useCallback((item: TData) => {
@@ -125,23 +138,79 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   const handleDelete = React.useCallback((item: TData) => {
     setSelectedItem(item);
-    setEditModalDeleteOpen(true);
+    setDeleteModalOpen(true);
   }, []);
 
   const renderCellValue = React.useCallback((value: unknown, type?: string) => {
     if (value === null || value === undefined) return <div>-</div>;
+
     if (type === "boolean") return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
     if (type === "number") return <div>{Number(value).toLocaleString()}</div>;
     if (type === "date")
       return <div>{new Date(String(value)).toLocaleDateString("id-ID")}</div>;
     if (type === "email")
       return <div className="lowercase text-blue-600">{String(value)}</div>;
-    if (type === "truncate")
+    if (type === "truncate") {
       return (
         <div className="max-w-xs truncate" title={String(value)}>
           {String(value)}
         </div>
       );
+    }
+    if (type === "phone") {
+      return (
+        <div className="flex items-center gap-2">
+          <Phone className="h-4 w-4 text-muted-foreground" />
+          <span>{String(value)}</span>
+        </div>
+      );
+    }
+    if (type === "kelas") {
+      if (Array.isArray(value) && value.length > 0) {
+        const kelasName = (value[0] as any)?.namaKelas;
+        return (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <GraduationCap className="h-3 w-3" />
+            {kelasName}
+          </Badge>
+        );
+      }
+      return <span className="text-muted-foreground">Belum ada kelas</span>;
+    }
+    if (type === "status") {
+      const status = String(value) as StatusSiswa;
+      let variant: "default" | "secondary" | "destructive" | "outline" =
+        "outline";
+      let text: string = status;
+
+      switch (status) {
+        case StatusSiswa.AKTIF:
+          variant = "default";
+          text = "Aktif";
+          break;
+        case StatusSiswa.LULUS:
+          variant = "secondary";
+          text = "Lulus";
+          break;
+        case StatusSiswa.PINDAH:
+          variant = "outline";
+          text = "Pindah";
+          break;
+        case StatusSiswa.KELUAR:
+        case StatusSiswa.DIKELUARKAN:
+          variant = "destructive";
+          text = status === StatusSiswa.KELUAR ? "Keluar" : "Dikeluarkan";
+          break;
+        default:
+          variant = "outline";
+      }
+
+      return <Badge variant={variant}>{text}</Badge>;
+    }
+    if (type === "badge") {
+      const val = String(value);
+      return <Badge variant="outline">{val}</Badge>;
+    }
 
     return <div>{String(value)}</div>;
   }, []);
@@ -440,7 +509,7 @@ export function DataTable<TData extends Record<string, unknown>>({
         </div>
       </div>
 
-      <SiswaDetailsDialog
+      <ViewSiswaDialog
         open={viewModalOpen}
         onOpenChange={setViewModalOpen}
         item={selectedItem as unknown as SiswaWithRelations}
@@ -453,9 +522,9 @@ export function DataTable<TData extends Record<string, unknown>>({
       />
 
       <DeleteSiswaDialog
-        open={editModalDeleteOpen}
-        onOpenChange={setEditModalDeleteOpen}
-        item={selectedItem as unknown as SiswaBasic}
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        item={selectedItem as unknown as SiswaWithRelations}
       />
     </div>
   );

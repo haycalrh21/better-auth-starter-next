@@ -23,6 +23,24 @@ async function generateUniqueClassName(
   tahunAjaran: string,
   semester: string
 ): Promise<string> {
+  return generateUniqueClassNameWithAvoidList(
+    grade,
+    jenjang,
+    jurusan,
+    tahunAjaran,
+    semester,
+    []
+  );
+}
+
+async function generateUniqueClassNameWithAvoidList(
+  grade: number,
+  jenjang: string,
+  jurusan: string | undefined,
+  tahunAjaran: string,
+  semester: string,
+  avoidList: string[] = []
+): Promise<string> {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let sectionIndex = 0;
   let namaKelas: string;
@@ -34,19 +52,25 @@ async function generateUniqueClassName(
       const numericSuffix = Math.floor(sectionIndex / 26) + 1;
       const letterIndex = sectionIndex % 26;
       namaKelas = jurusan
-        ? `${grade} ${jurusan} ${alphabet[letterIndex]}${numericSuffix}`
-        : `${grade}${alphabet[letterIndex]}${numericSuffix}`;
+        ? `${grade} ${jurusan} ${alphabet[letterIndex]}${numericSuffix} S${semester}`
+        : `${grade}${alphabet[letterIndex]}${numericSuffix} S${semester}`;
     } else {
       namaKelas = jurusan
-        ? `${grade} ${jurusan} ${section}`
-        : `${grade}${section}`;
+        ? `${grade} ${jurusan} ${section} S${semester}`
+        : `${grade}${section} S${semester}`;
+    }
+
+    // Check if name is in avoid list (already used in current transaction)
+    if (avoidList.includes(namaKelas)) {
+      sectionIndex++;
+      continue;
     }
 
     const existingClass = await prisma.kelas.findFirst({
       where: {
         namaKelas,
         tahunAjaran,
-        semester,
+        // Only check the unique constraint fields since semester is now in the name
       },
     });
 
@@ -535,18 +559,23 @@ export async function createRandomKelas(formData: FormData) {
     );
 
     const createdClasses: any[] = [];
+    const usedClassNames: string[] = []; // Track names used in this transaction
 
     // Create classes in a transaction
     const result = await prisma.$transaction(async (tx) => {
       for (let i = 0; i < validData.numberOfClasses; i++) {
-        // Generate unique class name
-        const namaKelas = await generateUniqueClassName(
+        // Generate unique class name, avoiding names already used in this transaction
+        const namaKelas = await generateUniqueClassNameWithAvoidList(
           validData.grade,
           validData.jenjang,
           validData.jurusan,
           validData.tahunAjaran,
-          validData.semester
+          validData.semester,
+          usedClassNames
         );
+
+        // Add to used names to avoid duplicates in this transaction
+        usedClassNames.push(namaKelas);
 
         // Create the class
         const newKelas = await tx.kelas.create({
