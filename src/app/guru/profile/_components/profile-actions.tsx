@@ -21,11 +21,12 @@ export default function ProfileActions({ guru }: ProfileActionsProps) {
   return (
     <>
       <Button
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 w-full sm:w-auto"
         onClick={() => setEditDialogOpen(true)}
       >
         <Edit className="h-4 w-4" />
-        Edit Profil
+        <span className="hidden sm:inline">Edit Profil</span>
+        <span className="sm:hidden">Edit</span>
       </Button>
 
       <EditProfileGuruDialog

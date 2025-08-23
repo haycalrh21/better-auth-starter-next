@@ -36,6 +36,8 @@ export async function getProfileGuru() {
             email: true,
             name: true,
             role: true,
+            emailVerified: true,
+            createdAt: true,
           },
         },
         kelas: {

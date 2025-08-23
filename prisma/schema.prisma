@@ -79,7 +79,11 @@ model Guru {
   kelas              Kelas[]     // satu guru bisa punya banyak kelas
   mataPelajaran     MataPelajaran[] // satu guru bisa mengajar banyak mata pelajaran
   user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-Jadwal          Jadwal[]     // satu guru bisa punya banyak jadwal
+  Jadwal          Jadwal[]     // satu guru bisa punya banyak jadwal
+  
+  // New relations for attendance and assessment
+  absensi            Absensi[]   // Attendance records created by this teacher
+  penilaian          Penilaian[] // Assessments created by this teacher
   @@map("guru")
 }
 
@@ -106,6 +110,7 @@ model MataPelajaran {
   guruId      String?
   KKM         KKM[]     // satu mata pelajaran bisa punya banyak KKM
   Jadwal     Jadwal[]  // satu mata pelajaran bisa punya banyak jadwal
+  penilaian   Penilaian[] // assessments for this subject
   @@map("mata_pelajaran")
 }
 
@@ -237,6 +242,10 @@ model Kelas {
   Jadwal     Jadwal[]  // Class schedules
   Pembayaran Pembayaran[] // Class-related payments
   
+  // New relations for attendance and assessment
+  absensi     Absensi[]   // Attendance records for this class
+  penilaian   Penilaian[] // Assessments for this class
+  
   // Ensure unique class per academic year
   @@unique([namaKelas, tahunAjaran])
   @@map("kelas")
@@ -294,6 +303,10 @@ model Siswa {
   Beasiswa     Beasiswa[] // satu siswa bisa punya banyak beasiswa
   kelas             Kelas[]   @relation("KelasSiswa") // Class history (many-to-many)
   Pembayaran     Pembayaran[] // satu siswa bisa punya banyak pembayaran
+  
+  // New relations for attendance and assessment
+  absensi           Absensi[]     // Attendance records for this student
+  nilaiSiswa        NilaiSiswa[]  // Assessment scores for this student
   
   @@map("siswa")
 }
@@ -399,4 +412,94 @@ model UserLog {
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("user_logs")
+}
+
+// ATTENDANCE SYSTEM (ABSENSI)
+// UI Form: Month selector, Class (taught by teacher), Student names with radio buttons
+model Absensi {
+  id          String       @id @default(uuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Time Period
+  bulan       Int          // Month (1-12) for UI month selector
+  tahun       Int          // Year
+  tanggal     DateTime     // Specific date of attendance
+  
+  // Radio Button Options: Hadir, Sakit, Izin, Alfa
+  status      StatusAbsensi @default(HADIR)
+  keterangan  String?      // Required for SAKIT and IZIN
+  
+  // Relations
+  siswaId     String
+  siswa       Siswa        @relation(fields: [siswaId], references: [id])
+  
+  kelasId     String       // Class being taught
+  kelas       Kelas        @relation(fields: [kelasId], references: [id])
+  
+  guruId      String       // Teacher teaching this class
+  guru        Guru         @relation(fields: [guruId], references: [id])
+  
+  // Prevent duplicate attendance per student per day
+  @@unique([siswaId, kelasId, tanggal])
+  @@map("absensi")
+}
+
+// ASSESSMENT SYSTEM (PENILAIAN)
+// Categories: Umum, UTS, UAS, Ulangan Harian (no enums, just string)
+model Penilaian {
+  id               String    @id @default(uuid())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Assessment Info
+  nama             String    // Assessment name
+  kategori         String    // "Umum", "UTS", "UAS", "Ulangan Harian"
+  tanggalPenilaian DateTime  // Assessment date
+  nilaiMaksimal    Float     @default(100)
+  deskripsi        String?   // Optional description for the assessment
+  
+  // Relations
+  kelasId          String    // Class being assessed
+  kelas            Kelas     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  
+  guruId           String    // Teacher creating assessment
+  guru             Guru      @relation(fields: [guruId], references: [id], onDelete: Cascade)
+  
+  mataPelajaranId  String    // Subject being assessed
+  mataPelajaran    MataPelajaran @relation(fields: [mataPelajaranId], references: [id], onDelete: Cascade)
+  
+  // Student scores for this assessment
+  nilaiSiswa       NilaiSiswa[]
+  
+  @@map("penilaian")
+}
+
+// Individual student scores
+model NilaiSiswa {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  
+  nilai        Float      // Numeric score
+  catatan      String?    // Optional notes for this student's score
+  
+  // Relations
+  siswaId      String
+  siswa        Siswa      @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  
+  penilaianId  String
+  penilaian    Penilaian  @relation(fields: [penilaianId], references: [id], onDelete: Cascade)
+  
+  // One score per student per assessment
+  @@unique([siswaId, penilaianId])
+  @@map("nilai_siswa")
+}
+
+// ATTENDANCE STATUS ENUM
+enum StatusAbsensi {
+  HADIR    // Present - radio button option
+  SAKIT    // Sick - radio button option (requires keterangan)
+  IZIN     // Permission - radio button option (requires keterangan)
+  ALFA     // Absent - radio button option
 }

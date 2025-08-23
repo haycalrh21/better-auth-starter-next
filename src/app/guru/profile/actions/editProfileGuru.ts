@@ -141,6 +141,8 @@ export async function editProfileGuru(data: EditGuruInput) {
             email: true,
             name: true,
             role: true,
+            emailVerified: true,
+            createdAt: true,
           },
         },
         kelas: {

@@ -155,14 +155,14 @@ export default function AppSidebarGuru({
         url: "/guru/penilaian",
         icon: Award,
         isActive: hasActiveChild("/guru/penilaian", [
-          "/guru/penilaian/input-nilai",
-          "/guru/penilaian/analisis-nilai",
+          "/guru/penilaiann",
+          "/guru/penilaian/",
         ]),
         items: [
           {
             title: "Input Nilai",
-            url: "/guru/penilaian/input-nilai",
-            isActive: isActive("/guru/penilaian/input-nilai"),
+            url: "/guru/penilaian",
+            isActive: isActive("/guru/penilaian"),
           },
           {
             title: "Analisis Nilai",
@@ -178,15 +178,15 @@ export default function AppSidebarGuru({
         url: "/guru/absensi",
         icon: UserCheck,
         isActive: hasActiveChild("/guru/absensi", [
-          "/guru/absensi/presensi-siswa",
+          "/guru/absensi/",
           "/guru/absensi/rekap-absensi",
           "/guru/absensi/laporan-kehadiran",
         ]),
         items: [
           {
             title: "Presensi Siswa",
-            url: "/guru/absensi/presensi-siswa",
-            isActive: isActive("/guru/absensi/presensi-siswa"),
+            url: "/guru/absensi",
+            isActive: isActive("/guru/absensi"),
           },
           {
             title: "Rekap Absensi",

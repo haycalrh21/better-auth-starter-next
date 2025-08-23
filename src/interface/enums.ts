@@ -75,3 +75,11 @@ export enum Jenjang {
   SMA = "SMA", // Sekolah Menengah Atas (Senior High)
   SMK = "SMK", // Sekolah Menengah Kejuruan (Vocational High)
 }
+
+// ATTENDANCE STATUS ENUM (Radio Button Options)
+export enum StatusAbsensi {
+  HADIR = "HADIR", // Present - radio button option
+  SAKIT = "SAKIT", // Sick - radio button option (requires keterangan)
+  IZIN = "IZIN", // Permission - radio button option (requires keterangan)
+  ALFA = "ALFA", // Absent - radio button option
+}
