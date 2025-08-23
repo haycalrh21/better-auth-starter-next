@@ -130,7 +130,15 @@ export function DataTable({
           value = item.kelas?.namaKelas || "-";
           break;
         case "guru":
-          value = item.guru?.namaLengkap || "-";
+          // Check if it's a break time or system teacher
+          if (
+            item.mataPelajaran?.nama?.toLowerCase().includes("istirahat") ||
+            item.guru?.namaLengkap?.toLowerCase().includes("sistem istirahat")
+          ) {
+            value = "Tidak ada guru";
+          } else {
+            value = item.guru?.namaLengkap || "-";
+          }
           break;
         case "mataPelajaran":
           value = item.mataPelajaran?.nama || "-";

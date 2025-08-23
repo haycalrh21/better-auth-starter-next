@@ -323,39 +323,39 @@ export async function generateRandomSchedule(formData: FormData) {
       };
     }
 
-    // Auto-create Istirahat mata pelajaran if not exists
+    // Check if Istirahat subject exists (must be created by admin)
     let istirahatSubject = mataPelajaranList.find((mp) =>
       mp.nama.toLowerCase().includes("istirahat")
     );
 
     if (!istirahatSubject) {
-      // Create a temporary istirahat entry for this generation
-      istirahatSubject = await prisma.mataPelajaran.create({
-        data: {
-          nama: "Istirahat",
-          kode: "IST",
-          deskripsi: "Waktu istirahat siswa (auto-generated)",
-        },
-        include: {
-          guru: {
-            select: {
-              id: true,
-              namaLengkap: true,
-            },
-          },
-        },
-      });
-      console.log(
-        "Auto-created Istirahat mata pelajaran:",
-        istirahatSubject?.nama
-      );
+      return {
+        success: false,
+        error:
+          "Mata pelajaran 'Istirahat' belum dibuat. Silakan buat mata pelajaran Istirahat terlebih dahulu di modul Mata Pelajaran.",
+      };
+    }
+
+    // Use first available teacher for break times (database requirement)
+    // UI will handle displaying "no teacher" for break times
+    const breakTeacherId = guruList[0]?.id;
+
+    if (!breakTeacherId) {
+      return {
+        success: false,
+        error:
+          "Tidak ada guru tersedia. Tambahkan minimal satu guru untuk membuat jadwal.",
+      };
     }
 
     // Define break times including istirahat
     const breakTimes = [
-      { start: "09:15", end: "09:30", name: "Istirahat 1" },
-      { start: "12:00", end: "13:00", name: "Istirahat" }, // Main break/lunch
+      { start: "09:15", end: "09:30", name: "Istirahat Pagi" },
+      { start: "12:00", end: "13:00", name: "Istirahat Siang" }, // Main break/lunch
     ];
+
+    console.log("Break times defined:", breakTimes);
+    console.log("Istirahat subject:", istirahatSubject?.nama);
 
     const days: Hari[] = [
       Hari.SENIN,
@@ -388,81 +388,205 @@ export async function generateRandomSchedule(formData: FormData) {
         .padStart(2, "0")}`;
     };
 
-    // Generate schedule for each class
-    for (const kelasId of validatedData.kelasIds) {
-      for (const day of days) {
-        let currentTime = parseTime(validatedData.startTime!);
-        const endTime = parseTime(validatedData.endTime!);
-        const lessonDuration = validatedData.lessonDuration!;
+    // Helper function to check if two time slots overlap
+    const timeSlotsOverlap = (
+      start1: number,
+      end1: number,
+      start2: number,
+      end2: number
+    ) => {
+      return start1 < end2 && start2 < end1;
+    };
 
-        // Shuffle subjects (with their assigned teachers) for randomization
-        const shuffledSubjects = [...availableSubjects].sort(
-          () => Math.random() - 0.5
-        );
+    // Helper function to find available teacher for a time slot
+    const findAvailableTeacher = (
+      subjects: typeof availableSubjects,
+      day: Hari,
+      timeSlotStart: number,
+      timeSlotEnd: number,
+      existingSchedules: typeof schedules
+    ) => {
+      // Filter subjects by teachers who are not busy at this time
+      const availableTeachers = subjects.filter((subject) => {
+        const teacherId = subject.guru!.id;
 
-        if (shuffledSubjects.length === 0) {
-          console.warn(
-            `No subjects with assigned teachers available for class ${kelasId} on ${day}`
+        // Check if this teacher has any conflicting schedule
+        const hasConflict = existingSchedules.some((schedule) => {
+          if (schedule.hari !== day || schedule.guruId !== teacherId) {
+            return false;
+          }
+
+          const scheduleStart = parseTime(schedule.jamMulai);
+          const scheduleEnd = parseTime(schedule.jamSelesai);
+
+          return timeSlotsOverlap(
+            timeSlotStart,
+            timeSlotEnd,
+            scheduleStart,
+            scheduleEnd
           );
-          continue;
+        });
+
+        return !hasConflict;
+      });
+
+      // Return a random available teacher/subject
+      if (availableTeachers.length > 0) {
+        const randomIndex = Math.floor(
+          Math.random() * availableTeachers.length
+        );
+        return availableTeachers[randomIndex];
+      }
+
+      return null;
+    };
+
+    // Generate time slots for the entire school day
+    const generateTimeSlots = () => {
+      const slots: {
+        start: number;
+        end: number;
+        isBreak: boolean;
+        name?: string;
+      }[] = [];
+      let currentTime = parseTime(validatedData.startTime!);
+      const endTime = parseTime(validatedData.endTime!);
+      const lessonDuration = validatedData.lessonDuration!;
+
+      // First, add all predefined break times
+      for (const breakTime of breakTimes) {
+        const breakStart = parseTime(breakTime.start);
+        const breakEndTime = parseTime(breakTime.end);
+
+        // Only add if within school hours
+        if (
+          breakStart >= parseTime(validatedData.startTime!) &&
+          breakEndTime <= parseTime(validatedData.endTime!)
+        ) {
+          slots.push({
+            start: breakStart,
+            end: breakEndTime,
+            isBreak: true,
+            name: breakTime.name,
+          });
+        }
+      }
+
+      // Then, add lesson slots avoiding break times
+      while (currentTime + lessonDuration <= endTime) {
+        let conflictsWithBreak = false;
+
+        // Check if this time slot conflicts with any break time
+        for (const breakTime of breakTimes) {
+          const breakStart = parseTime(breakTime.start);
+          const breakEndTime = parseTime(breakTime.end);
+
+          if (
+            timeSlotsOverlap(
+              currentTime,
+              currentTime + lessonDuration,
+              breakStart,
+              breakEndTime
+            )
+          ) {
+            // Skip to after the break time
+            currentTime = breakEndTime;
+            conflictsWithBreak = true;
+            break;
+          }
         }
 
-        let subjectIndex = 0;
+        if (!conflictsWithBreak && currentTime + lessonDuration <= endTime) {
+          // Add regular lesson slot
+          slots.push({
+            start: currentTime,
+            end: currentTime + lessonDuration,
+            isBreak: false,
+          });
+          currentTime += lessonDuration + 15; // Add 15 minutes break between lessons
+        }
+      }
 
-        while (currentTime + lessonDuration <= endTime) {
-          // Check if current time conflicts with break time
-          const currentTimeStr = formatTime(currentTime);
-          const lessonEndTime = currentTime + lessonDuration;
-          const lessonEndTimeStr = formatTime(lessonEndTime);
+      // Sort slots by start time
+      return slots.sort((a, b) => a.start - b.start);
+    };
 
-          let isBreakTime = false;
+    const timeSlots = generateTimeSlots();
+    console.log(
+      "Generated time slots:",
+      timeSlots.map((slot) => ({
+        time: `${formatTime(slot.start)} - ${formatTime(slot.end)}`,
+        isBreak: slot.isBreak,
+        name: slot.name,
+      }))
+    );
 
-          for (const breakTime of breakTimes) {
-            const breakStart = parseTime(breakTime.start);
-            const breakEnd = parseTime(breakTime.end);
+    // Generate schedule with teacher conflict prevention
+    for (const day of days) {
+      for (const timeSlot of timeSlots) {
+        if (timeSlot.isBreak) {
+          // Add break for all classes - Use existing teacher for database requirement
+          for (const kelasId of validatedData.kelasIds) {
+            const breakSchedule = {
+              hari: day,
+              jamMulai: formatTime(timeSlot.start),
+              jamSelesai: formatTime(timeSlot.end),
+              kelasId,
+              guruId: breakTeacherId, // Use existing teacher
+              mataPelajaranId: istirahatSubject?.id || null,
+            };
+            schedules.push(breakSchedule);
+            console.log(
+              `Added break schedule for ${day} at ${formatTime(
+                timeSlot.start
+              )}-${formatTime(
+                timeSlot.end
+              )} for class ${kelasId} - UI will show no teacher`
+            );
+          }
+        } else {
+          // Assign lessons with teacher conflict checking
+          for (const kelasId of validatedData.kelasIds) {
+            const availableTeacher = findAvailableTeacher(
+              availableSubjects,
+              day,
+              timeSlot.start,
+              timeSlot.end,
+              schedules
+            );
 
-            // If lesson would overlap with break, schedule the break instead
-            if (
-              (currentTime < breakEnd && lessonEndTime > breakStart) ||
-              currentTime === breakStart
-            ) {
-              // Add istirahat schedule (no teacher needed for breaks)
+            if (availableTeacher) {
               schedules.push({
                 hari: day,
-                jamMulai: formatTime(breakStart),
-                jamSelesai: formatTime(breakEnd),
+                jamMulai: formatTime(timeSlot.start),
+                jamSelesai: formatTime(timeSlot.end),
                 kelasId,
-                guruId: guruList[0]?.id || "", // Temporary assignment, will be handled in display
-                mataPelajaranId: istirahatSubject?.id || null,
+                guruId: availableTeacher.guru!.id,
+                mataPelajaranId: availableTeacher.id,
               });
-
-              currentTime = breakEnd;
-              isBreakTime = true;
-              break;
+            } else {
+              // If no teacher available, try to use any available subject
+              // This can happen when there are more classes than available teachers
+              const fallbackSubject =
+                availableSubjects[
+                  Math.floor(Math.random() * availableSubjects.length)
+                ];
+              if (fallbackSubject) {
+                console.warn(
+                  `Teacher conflict detected for class ${kelasId} on ${day} at ${formatTime(
+                    timeSlot.start
+                  )}. Using fallback assignment.`
+                );
+                schedules.push({
+                  hari: day,
+                  jamMulai: formatTime(timeSlot.start),
+                  jamSelesai: formatTime(timeSlot.end),
+                  kelasId,
+                  guruId: fallbackSubject.guru!.id,
+                  mataPelajaranId: fallbackSubject.id,
+                });
+              }
             }
-          }
-
-          if (!isBreakTime && currentTime + lessonDuration <= endTime) {
-            // Add regular lesson with assigned teacher
-            const subject =
-              shuffledSubjects[subjectIndex % shuffledSubjects.length];
-
-            schedules.push({
-              hari: day,
-              jamMulai: currentTimeStr,
-              jamSelesai: lessonEndTimeStr,
-              kelasId,
-              guruId: subject.guru!.id, // Use the teacher assigned to this subject
-              mataPelajaranId: subject.id,
-            });
-
-            currentTime = lessonEndTime;
-            subjectIndex++;
-          }
-
-          // Add small break between lessons if not already a break time
-          if (!isBreakTime) {
-            currentTime += 15; // 15 minute break between lessons
           }
         }
       }

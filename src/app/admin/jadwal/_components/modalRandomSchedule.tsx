@@ -222,7 +222,8 @@ export default function RandomScheduleModal({
             </DialogTitle>
             <DialogDescription className="leading-relaxed mt-2">
               Buat jadwal acak untuk kelas-kelas yang dipilih. Sistem akan
-              secara otomatis mengatur:
+              secara otomatis mengatur dan memastikan tidak ada guru yang
+              mengajar di beberapa kelas pada waktu yang sama:
             </DialogDescription>
           </DialogHeader>
 
@@ -240,6 +241,13 @@ export default function RandomScheduleModal({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full border"></div>
+                  <span>
+                    <strong>Mencegah konflik guru:</strong> Satu guru tidak
+                    dapat mengajar beberapa kelas di waktu yang sama
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full border"></div>
                   <span>Menambahkan waktu istirahat otomatis</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -249,6 +257,14 @@ export default function RandomScheduleModal({
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full border"></div>
                   <span>Jadwal hanya untuk hari Senin-Jumat</span>
+                </div>
+                <div className="flex items-center gap-2 mt-3 p-2 bg-yellow-50 rounded border border-yellow-200">
+                  <span className="text-yellow-600">⚠️</span>
+                  <span className="text-yellow-800 text-xs">
+                    <strong>Catatan:</strong> Jika jumlah guru lebih sedikit
+                    dari jumlah kelas, beberapa guru mungkin tetap mengajar di
+                    waktu yang sama (fallback assignment)
+                  </span>
                 </div>
               </div>
             </div>
@@ -421,13 +437,13 @@ export default function RandomScheduleModal({
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full border"></div>
                   <span className="font-medium">
-                    Istirahat 1: 09:15 - 09:30
+                    Istirahat Pagi: 09:15 - 09:30
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full border"></div>
                   <span className="font-medium">
-                    Istirahat Makan: 12:00 - 13:00
+                    Istirahat Siang: 12:00 - 13:00
                   </span>
                 </div>
                 <div className="flex items-center gap-3">

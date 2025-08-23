@@ -21,6 +21,12 @@ import {
   Eye,
   Trash2,
   Pencil,
+  User,
+  GraduationCap,
+  Phone,
+  Briefcase,
+  BookOpen,
+  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,16 +56,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GuruDetailsDialog } from "./viewData";
-import { EditGuruDialog } from "./edit-data";
-import { Guru, GuruWithRelations } from "@/interface";
+import { Badge } from "@/components/ui/badge";
+
 import DeleteGuruDialog from "./delete-guru";
+import { ViewGuruDialog } from "./viewDataGuru";
+import BulkOperationsModal from "./bulk-operations-modal";
+import { GuruWithRelations } from "@/interface";
+import { EditGuruDialog } from "./edit-data";
 
 export interface TableColumn<TData> {
-  key: keyof TData | string; // 🔥 fleksibel
+  key: keyof TData | string;
   label: string;
   sortable?: boolean;
-  type?: "text" | "email" | "date" | "boolean" | "number" | "truncate";
+  type?:
+    | "text"
+    | "email"
+    | "date"
+    | "boolean"
+    | "number"
+    | "truncate"
+    | "badge"
+    | "employment"
+    | "kelas"
+    | "phone"
+    | "subjects"
+    | "nip";
 }
 
 interface DataTableProps<TData extends Record<string, unknown>> {
@@ -108,7 +129,8 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   const [viewModalOpen, setViewModalOpen] = React.useState(false);
   const [editModalOpen, setEditModalOpen] = React.useState(false);
-  const [editModalDeleteOpen, setEditModalDeleteOpen] = React.useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = React.useState(false);
   const [selectedItem, setSelectedItem] = React.useState<TData | null>(null);
 
   const handleView = React.useCallback((item: TData) => {
@@ -123,23 +145,115 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   const handleDelete = React.useCallback((item: TData) => {
     setSelectedItem(item);
-    setEditModalDeleteOpen(true);
+    setDeleteModalOpen(true);
   }, []);
 
   const renderCellValue = React.useCallback((value: unknown, type?: string) => {
     if (value === null || value === undefined) return <div>-</div>;
+
     if (type === "boolean") return <div>{Boolean(value) ? "Ya" : "Tidak"}</div>;
     if (type === "number") return <div>{Number(value).toLocaleString()}</div>;
     if (type === "date")
       return <div>{new Date(String(value)).toLocaleDateString("id-ID")}</div>;
     if (type === "email")
       return <div className="lowercase text-blue-600">{String(value)}</div>;
-    if (type === "truncate")
+    if (type === "truncate") {
       return (
         <div className="max-w-xs truncate" title={String(value)}>
           {String(value)}
         </div>
       );
+    }
+    if (type === "phone") {
+      return (
+        <div className="flex items-center gap-2">
+          <Phone className="h-4 w-4 text-muted-foreground" />
+          <span>{String(value)}</span>
+        </div>
+      );
+    }
+    if (type === "nip") {
+      return (
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4 text-muted-foreground" />
+          <span className="font-mono text-sm">{String(value)}</span>
+        </div>
+      );
+    }
+    if (type === "kelas") {
+      if (Array.isArray(value) && value.length > 0) {
+        const activeClasses = value.filter((k: any) => k.isActive);
+        if (activeClasses.length > 0) {
+          return (
+            <div className="flex flex-wrap gap-1">
+              {activeClasses.slice(0, 2).map((kelas: any, index: number) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="flex items-center gap-1"
+                >
+                  <Users className="h-3 w-3" />
+                  {kelas.namaKelas}
+                </Badge>
+              ))}
+              {activeClasses.length > 2 && (
+                <Badge variant="secondary">+{activeClasses.length - 2}</Badge>
+              )}
+            </div>
+          );
+        }
+      }
+      return <span className="text-muted-foreground">Belum ada kelas</span>;
+    }
+    if (type === "subjects") {
+      if (Array.isArray(value) && value.length > 0) {
+        return (
+          <div className="flex flex-wrap gap-1">
+            {value.slice(0, 2).map((subject: any, index: number) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="flex items-center gap-1"
+              >
+                <BookOpen className="h-3 w-3" />
+                {subject.nama}
+              </Badge>
+            ))}
+            {value.length > 2 && (
+              <Badge variant="secondary">+{value.length - 2}</Badge>
+            )}
+          </div>
+        );
+      }
+      return (
+        <span className="text-muted-foreground">Belum ada mata pelajaran</span>
+      );
+    }
+    if (type === "employment") {
+      const employment = String(value);
+      let variant: "default" | "secondary" | "destructive" | "outline" =
+        "outline";
+      let icon = <Briefcase className="h-3 w-3" />;
+
+      if (employment.toLowerCase().includes("pns")) {
+        variant = "default";
+      } else if (employment.toLowerCase().includes("honorer")) {
+        variant = "secondary";
+      } else if (employment.toLowerCase().includes("kontrak")) {
+        variant = "outline";
+      }
+
+      return (
+        <Badge variant={variant} className="flex items-center gap-1">
+          {icon}
+          {employment}
+        </Badge>
+      );
+    }
+    if (type === "badge") {
+      const val = String(value);
+      return <Badge variant="outline">{val}</Badge>;
+    }
 
     return <div>{String(value)}</div>;
   }, []);
@@ -284,54 +398,69 @@ export function DataTable<TData extends Record<string, unknown>>({
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
-        {searchKey && (
-          <Input
-            placeholder={searchPlaceholder}
-            value={
-              (table
-                .getColumn(String(searchKey))
-                ?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table
-                .getColumn(String(searchKey))
-                ?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
-        )}
-        {showColumnToggle && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+        <div className="flex items-center space-x-2">
+          {searchKey && (
+            <Input
+              placeholder={searchPlaceholder}
+              value={
+                (table
+                  .getColumn(String(searchKey))
+                  ?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table
+                  .getColumn(String(searchKey))
+                  ?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+          )}
+          {showSelection &&
+            table.getFilteredSelectedRowModel().rows.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setBulkModalOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                Operasi Bulk ({table.getFilteredSelectedRowModel().rows.length})
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  const columnConfig = columns.find(
-                    (col) => String(col.key) === column.id
-                  );
-                  const label = columnConfig?.label || column.id;
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(Boolean(value))
-                      }
-                    >
-                      {label}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+            )}
+        </div>
+        <div className="ml-auto flex items-center space-x-2">
+          {showColumnToggle && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    const columnConfig = columns.find(
+                      (col) => String(col.key) === column.id
+                    );
+                    const label = columnConfig?.label || column.id;
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(Boolean(value))
+                        }
+                      >
+                        {label}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -438,23 +567,34 @@ export function DataTable<TData extends Record<string, unknown>>({
         </div>
       </div>
 
-      <GuruDetailsDialog
+      <ViewGuruDialog
         open={viewModalOpen}
         onOpenChange={setViewModalOpen}
         item={selectedItem as unknown as GuruWithRelations}
       />
 
-      {/* Menggunakan casting 'as unknown as Guru' untuk mengatasi masalah tipe */}
       <EditGuruDialog
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
-        item={selectedItem as unknown as Guru}
+        item={selectedItem as unknown as GuruWithRelations}
       />
 
       <DeleteGuruDialog
-        open={editModalDeleteOpen}
-        onOpenChange={setEditModalDeleteOpen}
-        item={selectedItem as unknown as Guru}
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        item={selectedItem as unknown as GuruWithRelations}
+      />
+
+      <BulkOperationsModal
+        open={bulkModalOpen}
+        onOpenChange={setBulkModalOpen}
+        selectedTeachers={table
+          .getFilteredSelectedRowModel()
+          .rows.map((row) => row.original as unknown as GuruWithRelations)}
+        onSuccess={() => {
+          setRowSelection({});
+          setBulkModalOpen(false);
+        }}
       />
     </div>
   );

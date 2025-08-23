@@ -11,7 +11,7 @@ import {
 export default async function JadwalPage() {
   const dataJadwal = await getDataJadwal();
   const availableKelas = await getDataKelasWithoutSchedule();
-  console.log(dataJadwal, "jadwal kelas");
+
   // Define columns for the data table
   const columns: TableColumn[] = [
     {
